@@ -5,6 +5,7 @@ from typing import List, Optional
 from datetime import date, datetime
 import json
 import os
+import hashlib
 
 app = FastAPI(title="Sagamartha HR Enterprise v4 Backend")
 
@@ -61,11 +62,35 @@ class OvertimeRecord(BaseModel):
     manager_approval: str = "pending"
     comments: Optional[str] = ""
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 def load_json(path, default):
     if not os.path.exists(path):
         return default
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+@app.post("/api/login")
+def login(creds: LoginRequest):
+    users = load_json(USERS_FILE, [])
+    # hash password dengan sha256
+    pwd_hash = hashlib.sha256(creds.password.encode("utf-8")).hexdigest()
+    
+    for u in users:
+        if u["username"] == creds.username and u["password"] == pwd_hash:
+            return {
+                "message": "Login successful",
+                "user": {
+                    "username": u["username"],
+                    "employee_name": u["employee_name"],
+                    "role": u["role"],
+                    "supervisor_name": u.get("supervisor_name", "")
+                }
+            }
+            
+    raise HTTPException(status_code=401, detail="Masukan username atau password salah")
 
 @app.get("/")
 def read_root():
