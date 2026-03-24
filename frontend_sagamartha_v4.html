@@ -54,11 +54,14 @@
 </head>
 <body class="bg-surface font-body text-on-surface antialiased">
 <!-- TopNavBar -->
-<nav id="app-topnav" class="bg-white/90 backdrop-blur-md fixed top-0 z-50 flex justify-between items-center w-full px-8 h-16 shadow-sm border-b border-slate-100 hidden">
-<div class="flex items-center gap-8">
-<div class="flex items-center gap-3">
-<img src="LOGO%20SAGAMARTHA.png" alt="Sagamartha Logo" class="h-8 object-contain"/>
-<span class="text-xl font-bold bg-gradient-to-br from-[#00445b] to-[#0b5d7a] bg-clip-text text-transparent font-headline">Sagamartha HR v4</span>
+<nav id="app-topnav" class="bg-white/90 backdrop-blur-md fixed top-0 z-50 flex justify-between items-center w-full px-4 lg:px-8 h-16 shadow-sm border-b border-slate-100 hidden">
+<div class="flex items-center gap-4 lg:gap-8">
+<button id="mobile-menu-btn" onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+    <span class="material-symbols-outlined">menu</span>
+</button>
+<div class="flex items-center gap-2 lg:gap-3">
+<img src="LOGO%20SAGAMARTHA.png" alt="Sagamartha Logo" class="h-6 lg:h-8 object-contain"/>
+<span class="text-lg lg:text-xl font-bold bg-gradient-to-br from-[#00445b] to-[#0b5d7a] bg-clip-text text-transparent font-headline truncate max-w-[120px] lg:max-w-none">Sagamartha v4</span>
 </div>
 <div class="hidden md:flex gap-6 items-center">
 <a class="text-slate-500 hover:text-cyan-700 transition-colors font-headline font-semibold text-sm" href="javascript:switchView('view-dashboard')">Dashboard</a>
@@ -68,8 +71,8 @@
 </div>
 </div>
 <div class="flex items-center gap-4">
-<div class="relative hidden lg:block">
-<input id="global-search" oninput="handleGlobalSearch()" class="bg-surface-container-low border-none rounded-full px-4 py-1.5 text-sm w-64 focus:ring-2 focus:ring-primary/20" placeholder="Cari karyawan, proyek..." type="text"/>
+<div class="relative hidden sm:block">
+<input id="global-search" oninput="handleGlobalSearch()" class="bg-surface-container-low border-none rounded-full px-4 py-1.5 text-sm w-full max-w-[180px] lg:max-w-xs focus:ring-2 focus:ring-primary/20" placeholder="Cari karyawan, proyek..." type="text"/>
 <span class="material-symbols-outlined absolute right-3 top-1.5 text-slate-400 text-lg">search</span>
 </div>
 <div class="flex items-center gap-2 pl-4 border-l border-slate-200">
@@ -83,7 +86,8 @@
 </nav>
 
 <!-- SideNavBar -->
-<aside id="app-sidebar" class="h-screen w-64 fixed left-0 top-0 flex flex-col bg-slate-50 pt-20 p-4 gap-2 z-40 border-r border-slate-100 hidden">
+<aside id="app-sidebar" class="h-screen w-64 fixed left-0 top-0 flex flex-col bg-slate-50 pt-20 p-4 gap-2 z-40 border-r border-slate-100 transition-transform duration-300 transform -translate-x-full lg:translate-x-0 hidden">
+<div id="sidebar-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-[-1] lg:hidden hidden"></div>
 <div class="mb-6 px-2">
 <h2 class="font-headline font-extrabold tracking-tighter text-[#00445b] text-2xl uppercase">Sagamartha</h2>
 <p class="text-[10px] text-slate-500 tracking-widest uppercase font-bold">Ultima Indonesia</p>
@@ -153,8 +157,8 @@
 </section>
 
 <!-- VIEW: LOGIN -->
-<section id="view-login" class="flex flex-col items-center justify-center min-h-[70vh]">
-    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 w-96 text-center">
+<section id="view-login" class="flex flex-col items-center justify-center min-h-[70vh] p-4">
+    <div class="bg-white p-6 lg:p-8 rounded-2xl shadow-sm border border-slate-100 w-full max-w-md text-center">
         <img src="LOGO%20SAGAMARTHA.png" class="h-12 mx-auto mb-4">
         <h2 class="text-2xl font-bold text-primary font-headline mb-6">Portal HR Enterprise</h2>
         <input type="text" id="login-username" placeholder="Username" class="w-full mb-3 px-4 py-2 bg-slate-50 border-none rounded-lg text-sm text-center focus:ring-2 focus:ring-primary/20 outline-none">
@@ -428,8 +432,8 @@
 </main>
 
 <!-- MODAL: ISI TARGET BARU -->
-<div id="modal-target" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center">
-    <div class="bg-white w-[500px] rounded-2xl shadow-xl overflow-hidden flex flex-col">
+<div id="modal-target" class="fixed inset-0 bg-black/50 z-[100] hidden items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col">
         <div class="bg-primary px-6 py-4 flex justify-between items-center text-white">
             <h2 class="font-headline font-bold text-lg">Input Target Harian</h2>
             <button onclick="closeTargetModal()" class="hover:bg-white/20 rounded-full p-1 transition-colors"><span class="material-symbols-outlined">close</span></button>
@@ -727,14 +731,21 @@
         });
 
         // Toggle App Shell visibility based on view
-        if(viewId === 'view-login') {
-            if(topNav) topNav.classList.add('hidden');
-            if(sidebar) sidebar.classList.add('hidden');
-            if(main) main.className = 'ml-0 pt-0 w-full flex items-center justify-center min-h-screen transition-all';
-        } else {
-            if(topNav) topNav.classList.remove('hidden');
-            if(sidebar) sidebar.classList.remove('hidden');
-            if(main) main.className = 'ml-64 pt-24 px-8 pb-12 min-h-screen transition-all';
+        const isLogin = (viewId === 'view-login');
+        if(topNav) topNav.classList.toggle('hidden', isLogin);
+        if(sidebar) sidebar.classList.toggle('hidden', isLogin);
+        
+        if(main) {
+            if(isLogin) {
+                main.className = 'ml-0 pt-0 w-full flex items-center justify-center min-h-screen transition-all';
+            } else {
+                main.className = 'lg:ml-64 ml-0 pt-20 lg:pt-24 px-4 lg:px-8 pb-12 min-h-screen transition-all';
+                // Auto close sidebar on mobile after navigation
+                const sidebarEl = document.getElementById('app-sidebar');
+                if(sidebarEl && !sidebarEl.classList.contains('-translate-x-full') && window.innerWidth < 1024) {
+                    toggleSidebar();
+                }
+            }
         }
         
         // Show target view
@@ -757,6 +768,15 @@
         const activeBtn = document.getElementById('nav-' + viewId);
         if (activeBtn) {
             activeBtn.className = 'nav-btn flex items-center gap-3 px-4 py-3 bg-white text-[#00445b] font-bold shadow-sm rounded-lg text-sm';
+        }
+    };
+
+    window.toggleSidebar = function() {
+        const sidebar = document.getElementById('app-sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        if(sidebar) {
+            sidebar.classList.toggle('-translate-x-full');
+            if(overlay) overlay.classList.toggle('hidden');
         }
     };
 
