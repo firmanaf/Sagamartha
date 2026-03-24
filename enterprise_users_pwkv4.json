@@ -1,0 +1,202 @@
+[
+  {
+    "username": "adi",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Adi Purnomo, S. Akun.",
+
+    "supervisor_name": "Annisa Dira Hariyanto, S.T., M.P.W.K.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "ufaira",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Ufaira Aulia Nur Ramadhani, S.Pi.",
+
+    "supervisor_name": "Andini Putri Salsabillah, S.P.W.K.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "karina",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Karina Azizah, S.Pi.",
+
+    "supervisor_name": "Dimas Tri Rendra Graha, S.T., M. Ars.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "zahra",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Zahra Mustafafi",
+
+    "supervisor_name": "Annisa Dira Hariyanto, S.T., M.P.W.K.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "syahwa",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Syahwa Novelia Safitri",
+
+    "supervisor_name": "Andini Putri Salsabillah, S.P.W.K.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "angga",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "admin",
+    "employee_name": "Angga Anugerah Ardana, S.T.",
+
+    "supervisor_name": "",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "johan",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "admin",
+    "employee_name": "Johan Wahyu Panuntun, S.T.",
+
+    "supervisor_name": "",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "annisa",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "supervisor",
+    "employee_name": "Annisa Dira Hariyanto, S.T., M.P.W.K.",
+
+    "supervisor_name": "",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "nuryantiningsih",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "admin",
+    "employee_name": "Nuryantiningsih Pusporini, S.T., M. Ars.",
+
+    "supervisor_name": "",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "fiko",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Fiko Virgin Septarina, S.P.W.K.",
+
+    "supervisor_name": "Dimas Tri Rendra Graha, S.T., M. Ars.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "rizal",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Rizal Brilliant Nugraha, S.P.W.K.",
+
+    "supervisor_name": "Annisa Dira Hariyanto, S.T., M.P.W.K.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "muhammad",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Muhammad Kholifatkhur Rohman",
+
+    "supervisor_name": "Andini Putri Salsabillah, S.P.W.K.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "hardi",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Hardi Adityasna, S.P.W.K.",
+
+    "supervisor_name": "Dimas Tri Rendra Graha, S.T., M. Ars.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "angelly",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Angelly Taruli Emmanuella, S.P.W.K.",
+
+    "supervisor_name": "Annisa Dira Hariyanto, S.T., M.P.W.K.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "firman",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "admin",
+    "employee_name": "Firman Afrianto, S.T., M.T.",
+
+    "supervisor_name": "",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "nayyara",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Nayyara Nazmi Fayyaza",
+
+    "supervisor_name": "Andini Putri Salsabillah, S.P.W.K.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "afdhal",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Afdhal Ibnu Asya'fa",
+
+    "supervisor_name": "Dimas Tri Rendra Graha, S.T., M. Ars.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "muhammad.afri",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "karyawan",
+    "employee_name": "Muhammad Afri Naufal",
+
+    "supervisor_name": "Annisa Dira Hariyanto, S.T., M.P.W.K.",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "andini",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "supervisor",
+    "employee_name": "Andini Putri Salsabillah, S.P.W.K.",
+
+    "supervisor_name": "",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "dimas",
+    "password": "6adb0cd9dbaf187ad4435d1a3e975c3803f718a17e0feff8335a14573a82b5d0",
+    "role": "supervisor",
+    "employee_name": "Dimas Tri Rendra Graha, S.T., M. Ars.",
+
+    "supervisor_name": "",
+    "is_active": true,
+    "must_change_password": true
+  }
+]
