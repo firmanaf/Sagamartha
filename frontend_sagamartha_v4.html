@@ -170,9 +170,17 @@
 
 <!-- VIEW: DASHBOARD -->
 <section id="view-dashboard" class="hidden">
-<header class="mb-8">
+<header class="mb-8 flex flex-wrap justify-between items-end gap-4">
+<div>
 <h1 class="text-3xl font-headline font-bold text-primary tracking-tight">Overview Dashboard</h1>
 <p class="text-slate-500 font-medium text-sm">Ringkasan performa dan capaian target seluruh unit.</p>
+</div>
+<div class="flex items-center gap-3">
+<label class="text-xs font-bold text-slate-500 uppercase">Karyawan:</label>
+<select id="dashboard-employee-filter" onchange="updateDashboardCharts()" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium shadow-sm cursor-pointer min-w-[180px]">
+<option value="">Semua Karyawan</option>
+</select>
+</div>
 </header>
 <!-- Analytics Charts Section -->
 <div class="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -505,6 +513,11 @@
             <button onclick="closeTargetModal()" class="hover:bg-white/20 rounded-full p-1 transition-colors"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="p-6 flex flex-col gap-4">
+            <div id="input-employee-wrapper" class="hidden">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Untuk Karyawan</label>
+                <select id="input-employee" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+                </select>
+            </div>
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tanggal Kerja</label>
                 <input type="date" id="input-date" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
@@ -615,6 +628,7 @@
             // Pre-load data for other pages
             fetchOvertime();
             fetchUsers();
+            populateEmployeeDropdowns();
         } else {
             switchView('view-login');
         }
@@ -681,6 +695,13 @@
     // Modal logic
     function openTargetModal() {
         document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
+        // Show employee selector for admin/supervisor
+        const wrapper = document.getElementById('input-employee-wrapper');
+        if(currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor')) {
+            wrapper.classList.remove('hidden');
+        } else {
+            wrapper.classList.add('hidden');
+        }
         document.getElementById('modal-target').classList.remove('hidden');
     }
     
@@ -693,9 +714,16 @@
         const btn = document.getElementById('btn-submit-target');
         btn.textContent = 'Menyimpan...';
 
+        // Determine employee name: admin/supervisor can pick, others use own name
+        let targetEmployee = currentUser.employee_name;
+        if(currentUser.role === 'admin' || currentUser.role === 'supervisor') {
+            const sel = document.getElementById('input-employee').value;
+            if(sel) targetEmployee = sel;
+        }
+
         const payload = {
             id: 'TGT-' + Math.floor(Math.random() * 100000),
-            employee_name: currentUser.employee_name,
+            employee_name: targetEmployee,
             work_date: document.getElementById('input-date').value,
             project_title: document.getElementById('input-project').value,
             target_description: document.getElementById('input-desc').value,
@@ -776,7 +804,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const ctxKinerja = document.getElementById('kinerjaChart').getContext('2d');
-        new Chart(ctxKinerja, {
+        window.kinerjaChartInstance = new Chart(ctxKinerja, {
             type: 'line',
             data: {
                 labels: ['18 Mar', '19 Mar', '20 Mar', '21 Mar', '22 Mar', '23 Mar', '24 Mar'],
@@ -813,7 +841,7 @@
         });
 
         const ctxKategori = document.getElementById('kategoriChart').getContext('2d');
-        new Chart(ctxKategori, {
+        window.kategoriChartInstance = new Chart(ctxKategori, {
             type: 'doughnut',
             data: {
                 labels: ['Analisis Spasial', 'Produksi Peta', 'Perencanaan', 'Lainnya'],
@@ -834,6 +862,86 @@
             }
         });
 
+        // Store chart instances for dynamic updates
+        window.kinerjaChartInstance = null;
+        window.kategoriChartInstance = null;
+
+        // Populate employee dropdowns from API
+        async function populateEmployeeDropdowns() {
+            try {
+                const res = await fetch('https://sagamartha.onrender.com/api/users');
+                if(!res.ok) return;
+                const users = await res.json();
+
+                // Dashboard filter
+                const dashSelect = document.getElementById('dashboard-employee-filter');
+                if(dashSelect) {
+                    dashSelect.innerHTML = '<option value="">Semua Karyawan</option>';
+                    users.forEach(u => {
+                        dashSelect.innerHTML += '<option value="' + u.employee_name + '">' + u.employee_name + ' (' + u.role + ')</option>';
+                    });
+                }
+
+                // Modal target employee
+                const modalSelect = document.getElementById('input-employee');
+                if(modalSelect) {
+                    modalSelect.innerHTML = '';
+                    users.forEach(u => {
+                        modalSelect.innerHTML += '<option value="' + u.employee_name + '">' + u.employee_name + '</option>';
+                    });
+                }
+            } catch(e) {
+                console.warn('Gagal memuat daftar karyawan:', e);
+            }
+        }
+
+        // Update dashboard charts based on selected employee
+        function updateDashboardCharts() {
+            const selected = document.getElementById('dashboard-employee-filter').value;
+            let data = window.allPerformanceData || [];
+            if(selected) {
+                data = data.filter(d => d.employee_name === selected);
+            }
+
+            // Group by date for line chart (last 7 unique dates)
+            const dateMap = {};
+            data.forEach(d => {
+                if(!dateMap[d.work_date]) dateMap[d.work_date] = { target: 0, achieve: 0 };
+                dateMap[d.work_date].target += d.daily_target;
+                dateMap[d.work_date].achieve += d.daily_performance;
+            });
+            const sortedDates = Object.keys(dateMap).sort().slice(-7);
+            const targetValues = sortedDates.map(d => dateMap[d].target);
+            const achieveValues = sortedDates.map(d => dateMap[d].achieve);
+            const dateLabels = sortedDates.map(d => { const p = d.split('-'); return p[2] + '/' + p[1]; });
+
+            // Group by category for doughnut
+            const catMap = {};
+            data.forEach(d => {
+                const cat = d.target_category || 'Lainnya';
+                catMap[cat] = (catMap[cat] || 0) + 1;
+            });
+            const catLabels = Object.keys(catMap);
+            const catValues = catLabels.map(c => catMap[c]);
+            const catColors = ['#00445b', '#10b981', '#f59e0b', '#cbd5e1', '#6366f1', '#ec4899'];
+
+            // Update line chart
+            if(window.kinerjaChartInstance) {
+                window.kinerjaChartInstance.data.labels = dateLabels.length ? dateLabels : ['No data'];
+                window.kinerjaChartInstance.data.datasets[0].data = targetValues.length ? targetValues : [0];
+                window.kinerjaChartInstance.data.datasets[1].data = achieveValues.length ? achieveValues : [0];
+                window.kinerjaChartInstance.update();
+            }
+
+            // Update doughnut chart
+            if(window.kategoriChartInstance) {
+                window.kategoriChartInstance.data.labels = catLabels.length ? catLabels : ['Belum ada data'];
+                window.kategoriChartInstance.data.datasets[0].data = catValues.length ? catValues : [1];
+                window.kategoriChartInstance.data.datasets[0].backgroundColor = catColors.slice(0, catLabels.length || 1);
+                window.kategoriChartInstance.update();
+            }
+        }
+
         // Global Data State
         window.allPerformanceData = [];
         window.filteredData = [];
@@ -846,6 +954,7 @@
                 if (!response.ok) return;
                 window.allPerformanceData = await response.json();
                 applyFilters();
+                updateDashboardCharts();
             } catch (err) {
                 console.warn('Gagal memuat API dari backend: ', err);
             }
