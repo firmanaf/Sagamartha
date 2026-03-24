@@ -69,7 +69,7 @@
 </div>
 <div class="flex items-center gap-4">
 <div class="relative hidden lg:block">
-<input class="bg-surface-container-low border-none rounded-full px-4 py-1.5 text-sm w-64 focus:ring-2 focus:ring-primary/20" placeholder="Cari karyawan, proyek..." type="text"/>
+<input id="global-search" oninput="handleGlobalSearch()" class="bg-surface-container-low border-none rounded-full px-4 py-1.5 text-sm w-64 focus:ring-2 focus:ring-primary/20" placeholder="Cari karyawan, proyek..." type="text"/>
 <span class="material-symbols-outlined absolute right-3 top-1.5 text-slate-400 text-lg">search</span>
 </div>
 <div class="flex items-center gap-2 pl-4 border-l border-slate-200">
@@ -223,7 +223,7 @@
 <label class="block text-[10px] uppercase font-bold text-slate-400 mb-1 ml-1">Karyawan / Proyek</label>
 <div class="relative">
 <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-xl">search</span>
-<input id="filter-search" class="w-full pl-10 pr-4 py-2 bg-surface rounded-lg border-outline-variant/20 focus:border-primary focus:ring-0 text-sm" placeholder="Cari karyawan, proyek..." type="text"/>
+<input id="filter-search" oninput="applyFilters()" class="w-full pl-10 pr-4 py-2 bg-surface rounded-lg border-outline-variant/20 focus:border-primary focus:ring-0 text-sm" placeholder="Cari karyawan, proyek..." type="text"/>
 </div>
 </div>
 <div class="w-48">
@@ -337,11 +337,17 @@
 </div>
 
 <!-- Filter Karyawan untuk Lembur -->
-<div class="mb-4 flex items-center gap-3" id="ot-filter-wrapper">
-<label class="text-xs font-bold text-slate-500 uppercase">Filter Karyawan:</label>
-<select id="ot-filter-employee" onchange="renderOvertimeTable()" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium shadow-sm cursor-pointer min-w-[180px]">
-<option value="">Semua Karyawan</option>
-</select>
+<div class="mb-4 flex flex-wrap items-center gap-4" id="ot-filter-wrapper">
+    <div class="flex items-center gap-3">
+        <label class="text-xs font-bold text-slate-500 uppercase">Filter Karyawan:</label>
+        <select id="ot-filter-employee" onchange="renderOvertimeTable()" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium shadow-sm cursor-pointer min-w-[180px]">
+            <option value="">Semua Karyawan</option>
+        </select>
+    </div>
+    <div class="relative flex-1 max-w-xs">
+        <span class="material-symbols-outlined absolute left-3 top-2 text-slate-400 text-lg">search</span>
+        <input id="ot-filter-search" oninput="renderOvertimeTable()" class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none shadow-sm" placeholder="Cari alasan, nama..." type="text"/>
+    </div>
 </div>
 
 <!-- Tabel Riwayat Lembur -->
@@ -390,9 +396,15 @@
 <p class="text-slate-500 font-medium text-sm">Daftar seluruh akun karyawan dan hierarki supervisor.</p>
 </header>
 <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-<div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-<span class="text-sm font-bold text-primary">Master Data User</span>
-<button onclick="fetchUsers()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Refresh"><span class="material-symbols-outlined">sync</span></button>
+<div class="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-wrap justify-between items-center gap-4">
+    <span class="text-sm font-bold text-primary">Master Data User</span>
+    <div class="flex items-center gap-4">
+        <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-2 text-slate-400 text-lg">search</span>
+            <input id="user-filter-search" oninput="fetchUsers()" class="pl-10 pr-4 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/20 outline-none w-64 shadow-sm" placeholder="Cari nama atau username..." type="text"/>
+        </div>
+        <button onclick="fetchUsers()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Refresh"><span class="material-symbols-outlined">sync</span></button>
+    </div>
 </div>
 <div class="overflow-x-auto">
     <table class="w-full text-left border-collapse min-w-[800px]">
@@ -748,6 +760,23 @@
         }
     };
 
+    window.handleGlobalSearch = function() {
+        const query = document.getElementById('global-search').value;
+        if (query) {
+            // Jump to Kinerja view if not there
+            const currentView = document.querySelector('section:not(.hidden)')?.id;
+            if (currentView !== 'view-kinerja') {
+                switchView('view-kinerja');
+            }
+            // Sync to local search
+            const localSearch = document.getElementById('filter-search');
+            if (localSearch) {
+                localSearch.value = query;
+                applyFilters();
+            }
+        }
+    };
+
     // --- GLOBAL STATE ---
     window.kinerjaChartInstance = null;
     window.kategoriChartInstance = null;
@@ -1020,6 +1049,15 @@
         const filterVal = document.getElementById('ot-filter-employee')?.value;
         if(filterVal) data = data.filter(d => d.employee_name === filterVal);
 
+        const searchVal = document.getElementById('ot-filter-search')?.value.toLowerCase();
+        if(searchVal) {
+            data = data.filter(d => 
+                d.employee_name.toLowerCase().includes(searchVal) || 
+                d.reason.toLowerCase().includes(searchVal) ||
+                d.id.toLowerCase().includes(searchVal)
+            );
+        }
+
         const filterWrapper = document.getElementById('ot-filter-wrapper');
         const empWrapper = document.getElementById('ot-employee-wrapper');
         if(isPrivileged) {
@@ -1064,7 +1102,18 @@
         try {
             const res = await fetch('https://sagamartha.onrender.com/api/users');
             if(!res.ok) return;
-            const data = await res.json();
+            let data = await res.json();
+            
+            // Apply search filter if any
+            const searchVal = document.getElementById('user-filter-search')?.value.toLowerCase();
+            if(searchVal) {
+                data = data.filter(u => 
+                    u.employee_name.toLowerCase().includes(searchVal) || 
+                    u.username.toLowerCase().includes(searchVal) ||
+                    (u.supervisor_name && u.supervisor_name.toLowerCase().includes(searchVal))
+                );
+            }
+
             const tbody = document.getElementById('usersTableBody');
             if(!tbody) return;
             tbody.innerHTML = '';
