@@ -4,7 +4,7 @@
     "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
     "role": "karyawan",
     "employee_name": "Adi Purnomo, S. Akun.",
-    "supervisor_name": "Annisa Dira Hariyanto, S.T., M.P.W.K.",
+    "supervisor_name": "Angga Anugerah Ardana, S.T.",
     "is_active": true,
     "must_change_password": true
   },
@@ -13,7 +13,7 @@
     "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
     "role": "karyawan",
     "employee_name": "Ufaira Aulia Nur Ramadhani, S.Pi.",
-    "supervisor_name": "Andini Putri Salsabillah, S.P.W.K.",
+    "supervisor_name": "Angga Anugerah Ardana, S.T.",
     "is_active": true,
     "must_change_password": true
   },
@@ -22,7 +22,7 @@
     "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
     "role": "karyawan",
     "employee_name": "Karina Azizah, S.Pi.",
-    "supervisor_name": "Dimas Tri Rendra Graha, S.T., M. Ars.",
+    "supervisor_name": "Angga Anugerah Ardana, S.T.",
     "is_active": true,
     "must_change_password": true
   },
@@ -85,7 +85,7 @@
     "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
     "role": "karyawan",
     "employee_name": "Fiko Virgin Septarina, S.P.W.K.",
-    "supervisor_name": "Dimas Tri Rendra Graha, S.T., M. Ars.",
+    "supervisor_name": "Annisa Dira Hariyanto, S.T., M.P.W.K.",
     "is_active": true,
     "must_change_password": true
   },
@@ -94,7 +94,7 @@
     "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
     "role": "karyawan",
     "employee_name": "Rizal Brilliant Nugraha, S.P.W.K.",
-    "supervisor_name": "Annisa Dira Hariyanto, S.T., M.P.W.K.",
+    "supervisor_name": "Dimas Tri Rendra Graha, S.T., M. Ars.",
     "is_active": true,
     "must_change_password": true
   },
@@ -103,7 +103,7 @@
     "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
     "role": "karyawan",
     "employee_name": "Muhammad Kholifatkhur Rohman",
-    "supervisor_name": "Andini Putri Salsabillah, S.P.W.K.",
+    "supervisor_name": "Dimas Tri Rendra Graha, S.T., M. Ars.",
     "is_active": true,
     "must_change_password": true
   },
@@ -139,7 +139,7 @@
     "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
     "role": "karyawan",
     "employee_name": "Afdhal Ibnu Asya'fa",
-    "supervisor_name": "Dimas Tri Rendra Graha, S.T., M. Ars.",
+    "supervisor_name": "Andini Putri Salsabillah, S.P.W.K.",
     "is_active": true,
     "must_change_password": true
   },
@@ -148,7 +148,7 @@
     "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
     "role": "karyawan",
     "employee_name": "Muhammad Afri Naufal",
-    "supervisor_name": "Annisa Dira Hariyanto, S.T., M.P.W.K.",
+    "supervisor_name": "Andini Putri Salsabillah, S.P.W.K.",
     "is_active": true,
     "must_change_password": true
   },
@@ -167,6 +167,15 @@
     "role": "supervisor",
     "employee_name": "Dimas Tri Rendra Graha, S.T., M. Ars.",
     "supervisor_name": "",
+    "is_active": true,
+    "must_change_password": true
+  },
+  {
+    "username": "dani",
+    "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+    "role": "karyawan",
+    "employee_name": "Ardany Tri Subekhi, S.PWK",
+    "supervisor_name": "Annisa Dira Hariyanto, S.T., M.P.W.K.",
     "is_active": true,
     "must_change_password": true
   }
