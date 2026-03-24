@@ -88,7 +88,7 @@
 <h2 class="font-headline font-extrabold tracking-tighter text-[#00445b] text-2xl uppercase">Sagamartha</h2>
 <p class="text-[10px] text-slate-500 tracking-widest uppercase font-bold">Ultima Indonesia</p>
 </div>
-<button class="flex items-center justify-center gap-2 px-4 py-3 mb-4 bg-primary text-white rounded-xl font-bold shadow-md hover:opacity-90 transition-all active:scale-95 w-full">
+<button onclick="openTargetModal()" class="flex items-center justify-center gap-2 px-4 py-3 mb-4 bg-primary text-white rounded-xl font-bold shadow-md hover:opacity-90 transition-all active:scale-95 w-full">
 <span class="material-symbols-outlined">add</span>
 <span>Isi Target Baru</span>
 </button>
@@ -231,6 +231,7 @@
 <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">%</th>
 <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Lembur</th>
 <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center pr-6">Persetujuan</th>
+<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center admin-action-col">Aksi</th>
 </tr>
 </thead>
 <tbody id="dataTableBody" class="divide-y divide-slate-100">
@@ -390,6 +391,53 @@
 
 </main>
 
+<!-- MODAL: ISI TARGET BARU -->
+<div id="modal-target" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center">
+    <div class="bg-white w-[500px] rounded-2xl shadow-xl overflow-hidden flex flex-col">
+        <div class="bg-primary px-6 py-4 flex justify-between items-center text-white">
+            <h2 class="font-headline font-bold text-lg">Input Target Harian</h2>
+            <button onclick="closeTargetModal()" class="hover:bg-white/20 rounded-full p-1 transition-colors"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <div class="p-6 flex flex-col gap-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tanggal Kerja</label>
+                <input type="date" id="input-date" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Judul Proyek</label>
+                <input type="text" id="input-project" placeholder="Contoh: Revisi Peta RTDR" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Kategori</label>
+                <select id="input-category" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+                    <option value="Analisis Spasial">Analisis Spasial</option>
+                    <option value="Produksi Peta">Produksi Peta</option>
+                    <option value="Perencanaan Teknis">Perencanaan Teknis</option>
+                    <option value="Lainnya">Lainnya</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Penjelasan Target</label>
+                <textarea id="input-desc" rows="2" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"></textarea>
+            </div>
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Volume Target</label>
+                    <input type="number" step="0.1" id="input-target" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+                </div>
+                <div class="flex-1">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Volume Capaian</label>
+                    <input type="number" step="0.1" id="input-achievement" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+                </div>
+            </div>
+        </div>
+        <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
+            <button onclick="closeTargetModal()" class="px-5 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 transition-colors">Batal</button>
+            <button onclick="submitTarget()" id="btn-submit-target" class="px-5 py-2 text-sm font-bold bg-primary text-white rounded-lg shadow-sm hover:opacity-90 transition-opacity">Simpan Data</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // Authentication State
     let currentUser = null;
@@ -453,6 +501,72 @@
             switchView('view-dashboard');
         } else {
             switchView('view-login');
+        }
+    }
+
+    // Modal logic
+    function openTargetModal() {
+        document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('modal-target').classList.remove('hidden');
+    }
+    
+    function closeTargetModal() {
+        document.getElementById('modal-target').classList.add('hidden');
+    }
+
+    async function submitTarget() {
+        if(!currentUser) return alert('Silakan login terlebih dahulu.');
+        const btn = document.getElementById('btn-submit-target');
+        btn.textContent = 'Menyimpan...';
+
+        const payload = {
+            id: 'TGT-' + Math.floor(Math.random() * 100000),
+            employee_name: currentUser.employee_name,
+            work_date: document.getElementById('input-date').value,
+            project_title: document.getElementById('input-project').value,
+            target_description: document.getElementById('input-desc').value,
+            target_category: document.getElementById('input-category').value,
+            daily_target: parseFloat(document.getElementById('input-target').value) || 0,
+            daily_performance: parseFloat(document.getElementById('input-achievement').value) || 0,
+            achievement_percent: 0,
+            status: "pending"
+        };
+        
+        if(payload.daily_target > 0) {
+            payload.achievement_percent = Math.min(100, Math.round((payload.daily_performance / payload.daily_target) * 100));
+        }
+
+        try {
+            const res = await fetch('https://sagamartha.onrender.com/api/performance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if(res.ok) {
+                alert('Data berhasil disimpan!');
+                closeTargetModal();
+                fetchPerformanceData(); // refresh table
+            } else {
+                const data = await res.json();
+                alert('Gagal: ' + data.detail);
+            }
+        } catch(e) {
+            alert('Kesalahan jaringan.');
+        }
+        btn.textContent = 'Simpan Data';
+    }
+
+    async function deletePerformance(id) {
+        if(!confirm('Yakin ingin menghapus record ini?')) return;
+        try {
+            const res = await fetch('https://sagamartha.onrender.com/api/performance/' + id, { method: 'DELETE' });
+            if(res.ok) {
+                fetchPerformanceData();
+            } else {
+                alert('Gagal menghapus.');
+            }
+        } catch(e) {
+            alert('Terjadi kesalahan jaringan.');
         }
     }
 
@@ -598,6 +712,9 @@
                             <td class="p-3 text-xs text-slate-400">—</td>
                             <td class="p-3 text-center pr-6">
                                 <span class="px-2 py-0.5 border ${statusColor} text-[10px] font-bold rounded-full uppercase">${item.status}</span>
+                            </td>
+                            <td class="p-3 text-center admin-action-col">
+                                ${currentUser && currentUser.role === 'admin' ? `<button onclick="deletePerformance('${item.id}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors tooltip" title="Hapus"><span class="material-symbols-outlined text-lg">delete</span></button>` : `<span class="text-slate-300 text-xs">-</span>`}
                             </td>
                         `;
                         tbody.appendChild(tr);

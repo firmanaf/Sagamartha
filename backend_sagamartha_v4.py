@@ -163,6 +163,18 @@ def create_performance(record: PerformanceRecord):
         json.dump(records, f, indent=2)
     return {"message": "Record created successfully."}
 
+@app.delete("/api/performance/{record_id}")
+def delete_performance(record_id: str):
+    records = load_json(RECORDS_FILE, [])
+    initial_count = len(records)
+    records = [r for r in records if r["id"] != record_id]
+    if len(records) == initial_count:
+        raise HTTPException(status_code=404, detail="Record not found.")
+    
+    with open(RECORDS_FILE, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=2)
+    return {"message": f"Record {record_id} deleted successfully."}
+
 @app.put("/api/performance/{record_id}/approval")
 def approve_performance(record_id: str, approval_status: str):
     if approval_status not in ["approved", "rejected", "pending"]:
