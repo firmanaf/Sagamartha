@@ -66,6 +66,10 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+class PasswordChangeRequest(BaseModel):
+    old_password: str
+    new_password: str
+
 def load_json(path, default):
     if not os.path.exists(path):
         return default
@@ -101,6 +105,37 @@ def get_users():
     users = load_json(USERS_FILE, [])
     # Filter sensitive data
     return [{"username": u["username"], "employee_name": u["employee_name"], "role": u["role"], "supervisor_name": u.get("supervisor_name", "")} for u in users]
+
+@app.delete("/api/users/{username}")
+def delete_user(username: str):
+    users = load_json(USERS_FILE, [])
+    initial_count = len(users)
+    users = [u for u in users if u["username"] != username]
+    if len(users) == initial_count:
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    with open(USERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, indent=2)
+    return {"message": f"User {username} deleted successfully."}
+
+@app.put("/api/users/{username}/password")
+def change_password(username: str, req: PasswordChangeRequest, admin_override: bool = False):
+    users = load_json(USERS_FILE, [])
+    for u in users:
+        if u["username"] == username:
+            old_hash = hashlib.sha256(req.old_password.encode("utf-8")).hexdigest()
+            # If admin_override is true, bypass old_password check (In real app, verify admin token)
+            if not admin_override and u["password"] != old_hash:
+                raise HTTPException(status_code=400, detail="Password lama salah.")
+            
+            new_hash = hashlib.sha256(req.new_password.encode("utf-8")).hexdigest()
+            u["password"] = new_hash
+            
+            with open(USERS_FILE, "w", encoding="utf-8") as f:
+                json.dump(users, f, indent=2)
+            return {"message": "Password berhasil diubah."}
+            
+    raise HTTPException(status_code=404, detail="User not found.")
 
 @app.get("/api/performance", response_model=List[PerformanceRecord])
 def get_performance(user: Optional[str] = None, dt: Optional[str] = None):
