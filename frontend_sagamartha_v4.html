@@ -193,12 +193,14 @@
             <canvas id="kinerjaChart"></canvas>
         </div>
     </div>
-    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col min-h-[300px]">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold text-slate-800 text-sm">Sebaran Kategori Target</h3>
+            <h3 class="font-bold text-slate-800 text-sm">Monitoring Target Hari Ini</h3>
+            <span id="missing-count" class="text-[10px] bg-red-50 text-red-600 px-2 py-1 rounded font-bold uppercase tracking-wider">0 Belum Isi</span>
         </div>
-        <div class="flex-1 relative min-h-[220px] w-full flex items-center justify-center">
-            <canvas id="kategoriChart"></canvas>
+        <div id="missing-targets-list" class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+            <!-- List of employees missing targets will be populated here -->
+            <p class="text-xs text-slate-400 text-center py-6">Semua karyawan sudah memiliki target hari ini. ✨</p>
         </div>
     </div>
     </div>
@@ -706,8 +708,16 @@
     }
 
     // Modal logic
-    function openTargetModal() {
+    function openTargetModal(preSelectedEmployee = null) {
         document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
+        
+        // Populate modal fields if preSelectedEmployee is provided
+        if(preSelectedEmployee) {
+            const select = document.getElementById('input-employee');
+            if(select) select.value = preSelectedEmployee;
+            document.getElementById('input-project').focus();
+        }
+
         // Show employee selector for admin/supervisor
         const wrapper = document.getElementById('input-employee-wrapper');
         if(currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor')) {
@@ -878,6 +888,7 @@
         // Store chart instances for dynamic updates
         window.kinerjaChartInstance = null;
         window.kategoriChartInstance = null;
+        window.allUsers = [];
 
         // Populate employee dropdowns from API
         async function populateEmployeeDropdowns() {
@@ -885,6 +896,7 @@
                 const res = await fetch('https://sagamartha.onrender.com/api/users');
                 if(!res.ok) return;
                 const users = await res.json();
+                window.allUsers = users;
 
                 // Dashboard filter
                 const dashSelect = document.getElementById('dashboard-employee-filter');
@@ -924,6 +936,67 @@
             } catch(e) {
                 console.warn('Gagal memuat daftar karyawan:', e);
             }
+        }
+
+        // Monitoring Target Hari Ini (Tanpa Target)
+        function updateMissingTargetsWidget() {
+            const listEl = document.getElementById('missing-targets-list');
+            const countEl = document.getElementById('missing-count');
+            if(!listEl || !countEl) return;
+
+            const today = new Date().toISOString().split('T')[0];
+            const usersWithTargets = new Set();
+            
+            // Periksa siapa saja yang punya target hari ini
+            (window.allPerformanceData || []).forEach(d => {
+                if(d.work_date === today) {
+                    usersWithTargets.add(d.employee_name);
+                }
+            });
+
+            // Filter karyawan (bukan admin/supervisor) yang belum isi target
+            const missing = (window.allUsers || []).filter(u => 
+                u.role === 'karyawan' && !usersWithTargets.has(u.employee_name)
+            );
+
+            countEl.textContent = missing.length + ' Belum Isi';
+            countEl.className = missing.length > 0 ? 'text-[10px] bg-red-50 text-red-600 px-2 py-1 rounded font-bold uppercase tracking-wider' : 'text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold uppercase tracking-wider';
+
+            listEl.innerHTML = '';
+            if(missing.length === 0) {
+                listEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">Semua karyawan sudah memiliki target hari ini. ✨</p>';
+                return;
+            }
+
+            const isPrivileged = currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor');
+
+            missing.forEach(u => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-lg hover:border-primary/20 transition-all group';
+                
+                let actionBtn = '';
+                if(isPrivileged) {
+                    actionBtn = `
+                        <button onclick="openTargetModal('${u.employee_name}')" class="px-3 py-1.5 bg-white border border-slate-200 text-primary text-[10px] font-bold rounded-md hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm">
+                            Tentukan Target
+                        </button>
+                    `;
+                }
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
+                            ${u.employee_name.substring(0,2)}
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-800">${u.employee_name}</p>
+                            <p class="text-[9px] text-slate-400">Supervisor: ${u.supervisor_name || 'N/A'}</p>
+                        </div>
+                    </div>
+                    ${actionBtn}
+                `;
+                listEl.appendChild(item);
+            });
         }
 
         // Update dashboard charts based on selected employee
@@ -971,6 +1044,9 @@
                 window.kategoriChartInstance.data.datasets[0].backgroundColor = catColors.slice(0, catLabels.length || 1);
                 window.kategoriChartInstance.update();
             }
+
+            // Sync missing targets widget
+            updateMissingTargetsWidget();
         }
 
         // Global Data State
@@ -1296,6 +1372,7 @@
         }
 
         // Panggil saat halaman dimuat
+        populateEmployeeDropdowns();
         fetchPerformanceData();
 
         // Initialize Session Check
