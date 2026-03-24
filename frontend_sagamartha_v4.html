@@ -125,15 +125,30 @@
 <!-- VIEW: PENGATURAN -->
 <section id="view-pengaturan" class="hidden">
 <header class="mb-8">
-<h1 class="text-3xl font-headline font-bold text-primary tracking-tight">Pengaturan Sinkronisasi</h1>
+<h1 class="text-3xl font-headline font-bold text-primary tracking-tight">Pengaturan</h1>
+<p class="text-slate-500 font-medium text-sm">Pengaturan akun dan koneksi server.</p>
 </header>
-<div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200">
-   <p class="font-bold text-slate-800">Status Gateway API</p>
+
+<!-- Card: Ubah Password -->
+<div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+   <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-primary">lock</span> Ubah Password</h3>
+   <div class="flex flex-col gap-3 max-w-md">
+       <input type="password" id="pwd-old" placeholder="Password Lama" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+       <input type="password" id="pwd-new" placeholder="Password Baru" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+       <input type="password" id="pwd-confirm" placeholder="Konfirmasi Password Baru" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+       <p id="pwd-msg" class="text-xs hidden"></p>
+       <button onclick="changePassword()" id="btn-change-pwd" class="w-fit mt-1 px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg shadow-sm hover:opacity-90 transition-opacity">Simpan Password Baru</button>
+   </div>
+</div>
+
+<!-- Card: Status Koneksi -->
+<div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+   <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-primary">cloud_sync</span> Status Gateway API</h3>
    <div class="flex items-center gap-2 mt-2">
        <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
        <span class="text-sm text-slate-600">Terhubung ke Render.com (sagamartha.onrender.com)</span>
    </div>
-   <button onclick="fetchPerformanceData(); alert('Koneksi OK dan tersinkron.')" class="mt-4 px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg shadow-sm">Uji Koneksi Ulang</button>
+   <button onclick="fetchPerformanceData(); alert('Koneksi OK dan tersinkron.')" class="mt-4 px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg shadow-sm hover:opacity-90 transition-opacity">Uji Koneksi Ulang</button>
 </div>
 </section>
 
@@ -143,7 +158,11 @@
         <img src="LOGO%20SAGAMARTHA.png" class="h-12 mx-auto mb-4">
         <h2 class="text-2xl font-bold text-primary font-headline mb-6">Portal HR Enterprise</h2>
         <input type="text" id="login-username" placeholder="Username" class="w-full mb-3 px-4 py-2 bg-slate-50 border-none rounded-lg text-sm text-center focus:ring-2 focus:ring-primary/20 outline-none">
-        <input type="password" id="login-password" placeholder="Password default: 123456" class="w-full mb-6 px-4 py-2 bg-slate-50 border-none rounded-lg text-sm text-center focus:ring-2 focus:ring-primary/20 outline-none" onkeyup="if(event.key === 'Enter') doLogin()">
+        <input type="password" id="login-password" placeholder="Password default: 123456" class="w-full mb-4 px-4 py-2 bg-slate-50 border-none rounded-lg text-sm text-center focus:ring-2 focus:ring-primary/20 outline-none" onkeyup="if(event.key === 'Enter') doLogin()">
+        <label class="flex items-center justify-center gap-2 mb-5 cursor-pointer select-none">
+            <input type="checkbox" id="login-remember" class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/30">
+            <span class="text-xs text-slate-500">Ingat saya di perangkat ini</span>
+        </label>
         <button onclick="doLogin()" id="btn-login" class="w-full bg-primary text-white font-bold rounded-lg py-2 hover:opacity-90 transition-opacity">Masuk</button>
         <p id="login-error" class="text-xs text-red-500 mt-3 hidden">Username atau password salah.</p>
     </div>
@@ -463,6 +482,7 @@
         const pass = document.getElementById('login-password').value;
         const btn = document.getElementById('btn-login');
         const err = document.getElementById('login-error');
+        const remember = document.getElementById('login-remember').checked;
         
         btn.textContent = "Memverifikasi...";
         err.classList.add('hidden');
@@ -477,13 +497,18 @@
             if (res.ok) {
                 const data = await res.json();
                 currentUser = data.user;
-                localStorage.setItem('sagamartha_user', JSON.stringify(currentUser));
+                if(remember) {
+                    localStorage.setItem('sagamartha_user', JSON.stringify(currentUser));
+                } else {
+                    sessionStorage.setItem('sagamartha_user', JSON.stringify(currentUser));
+                }
                 initSession();
             } else {
+                err.textContent = "Username atau password salah.";
                 err.classList.remove('hidden');
             }
         } catch (e) {
-            err.textContent = "Server tidak merespon.";
+            err.textContent = "Server tidak merespon. Coba lagi dalam 1-2 menit.";
             err.classList.remove('hidden');
         }
         btn.textContent = "Masuk";
@@ -491,6 +516,7 @@
 
     function doLogout() {
         localStorage.removeItem('sagamartha_user');
+        sessionStorage.removeItem('sagamartha_user');
         currentUser = null;
         document.getElementById('app-topnav').classList.add('hidden');
         document.getElementById('app-sidebar').classList.add('hidden');
@@ -500,7 +526,7 @@
     }
 
     function initSession() {
-        const stored = localStorage.getItem('sagamartha_user');
+        const stored = localStorage.getItem('sagamartha_user') || sessionStorage.getItem('sagamartha_user');
         if (stored) {
             currentUser = JSON.parse(stored);
             document.getElementById('app-topnav').classList.replace('hidden', 'flex');
@@ -518,6 +544,64 @@
         } else {
             switchView('view-login');
         }
+    }
+
+    // Change Password
+    async function changePassword() {
+        if(!currentUser) return alert('Silakan login ulang.');
+        const oldPwd = document.getElementById('pwd-old').value;
+        const newPwd = document.getElementById('pwd-new').value;
+        const confirmPwd = document.getElementById('pwd-confirm').value;
+        const msg = document.getElementById('pwd-msg');
+        const btn = document.getElementById('btn-change-pwd');
+
+        msg.classList.add('hidden');
+
+        if(!oldPwd || !newPwd) {
+            msg.textContent = 'Semua kolom wajib diisi.';
+            msg.className = 'text-xs text-red-500';
+            msg.classList.remove('hidden');
+            return;
+        }
+        if(newPwd !== confirmPwd) {
+            msg.textContent = 'Password baru dan konfirmasi tidak cocok.';
+            msg.className = 'text-xs text-red-500';
+            msg.classList.remove('hidden');
+            return;
+        }
+        if(newPwd.length < 4) {
+            msg.textContent = 'Password baru minimal 4 karakter.';
+            msg.className = 'text-xs text-red-500';
+            msg.classList.remove('hidden');
+            return;
+        }
+
+        btn.textContent = 'Menyimpan...';
+        try {
+            const res = await fetch('https://sagamartha.onrender.com/api/users/' + currentUser.username + '/password', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ old_password: oldPwd, new_password: newPwd })
+            });
+            const data = await res.json();
+            if(res.ok) {
+                msg.textContent = 'Password berhasil diubah!';
+                msg.className = 'text-xs text-emerald-600';
+                msg.classList.remove('hidden');
+                document.getElementById('pwd-old').value = '';
+                document.getElementById('pwd-new').value = '';
+                document.getElementById('pwd-confirm').value = '';
+            } else {
+                msg.textContent = data.detail || 'Gagal mengubah password.';
+                msg.className = 'text-xs text-red-500';
+                msg.classList.remove('hidden');
+            }
+        } catch(e) {
+            msg.textContent = 'Kesalahan jaringan.';
+            msg.className = 'text-xs text-red-500';
+            msg.classList.remove('hidden');
+        }
+        btn.textContent = 'Simpan Password Baru';
     }
 
     // Modal logic
