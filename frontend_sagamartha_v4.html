@@ -153,7 +153,7 @@
 </section>
 
 <!-- VIEW: LOGIN -->
-<section id="view-login" class="flex flex-col items-center justify-center min-h-[70vh] block">
+<section id="view-login" class="flex flex-col items-center justify-center min-h-[70vh]">
     <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 w-96 text-center">
         <img src="LOGO%20SAGAMARTHA.png" class="h-12 mx-auto mb-4">
         <h2 class="text-2xl font-bold text-primary font-headline mb-6">Portal HR Enterprise</h2>
@@ -207,7 +207,7 @@
 </section>
 
 <!-- VIEW: KINERJA -->
-<section id="view-kinerja" class="block">
+<section id="view-kinerja" class="hidden">
 <header class="mb-8 flex justify-between items-end">
 <div class="space-y-1">
 <nav class="flex items-center gap-2 text-xs text-slate-400 font-medium mb-2">
@@ -255,7 +255,7 @@
 <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
 <div class="flex bg-surface-container-high p-1 rounded-xl">
 <button onclick="clearFilters()" class="px-5 py-2 rounded-lg text-sm font-bold bg-white text-primary shadow-sm">Semua Data</button>
-<button onclick="switchView('view-dashboard')" class="px-5 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700">Analitik</button><span id="table-record-count" class="px-2 py-0.5 bg-primary-fixed text-primary text-[10px] font-bold rounded">Live</span>
+<button onclick="switchView('view-dashboard')" class="px-5 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700">Analitik</button><span id="table-record-count" class="px-2 py-0.5 bg-primary-fixed text-primary text-[10px] font-bold rounded relative -top-1">0 Records</span>
 </div>
 <div class="flex gap-2">
 <button onclick="exportCSV()" class="p-2 text-slate-400 hover:text-primary transition-colors tooltip" title="Export CSV"><span class="material-symbols-outlined">download</span></button>
@@ -454,26 +454,26 @@
 <div class="p-4 border-b border-slate-100 bg-slate-50/50">
 <span class="text-sm font-bold text-primary">Riwayat Pengajuan Lembur</span>
 </div>
-<div class="overflow-x-auto">
-<table class="w-full text-left border-collapse">
-<thead>
-<tr class="bg-slate-50 border-b border-slate-200">
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider pl-6">ID</th>
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Karyawan</th>
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Tanggal</th>
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Mulai</th>
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Selesai</th>
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-right">Durasi</th>
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Alasan</th>
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center">Status</th>
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center">Aksi</th>
-</tr>
-</thead>
-<tbody id="overtimeTableBody" class="divide-y divide-slate-100">
-<tr><td colspan="9" class="p-6 text-center text-slate-400 text-sm">Memuat data lembur...</td></tr>
-</tbody>
-</table>
-</div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[1000px]">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200">
+                        <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider pl-6">ID</th>
+                        <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Karyawan</th>
+                        <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Tanggal</th>
+                        <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Mulai</th>
+                        <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Selesai</th>
+                        <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-right">Durasi</th>
+                        <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Alasan</th>
+                        <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                        <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="overtimeTableBody" class="divide-y divide-slate-100">
+                    <tr><td colspan="9" class="p-6 text-center text-slate-400 text-sm">Memuat data lembur...</td></tr>
+                </tbody>
+            </table>
+        </div>
 </section>
 </section>
 
@@ -500,20 +500,20 @@
 <button onclick="fetchUsers()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Refresh"><span class="material-symbols-outlined">sync</span></button>
 </div>
 <div class="overflow-x-auto">
-<table class="w-full text-left border-collapse">
-<thead>
-<tr class="bg-slate-50 border-b border-slate-200">
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider pl-6">Username</th>
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Nama Lengkap</th>
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Role</th>
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Supervisor</th>
-<th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center">Aksi</th>
-</tr>
-</thead>
-<tbody id="usersTableBody" class="divide-y divide-slate-100">
-<tr><td colspan="5" class="p-6 text-center text-slate-400 text-sm">Memuat data user...</td></tr>
-</tbody>
-</table>
+    <table class="w-full text-left border-collapse min-w-[800px]">
+        <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider pl-6">Username</th>
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Nama Lengkap</th>
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Role</th>
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Supervisor</th>
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center">Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="usersTableBody" class="divide-y divide-slate-100">
+            <tr><td colspan="5" class="p-6 text-center text-slate-400 text-sm">Memuat data user...</td></tr>
+        </tbody>
+    </table>
 </div>
 </section>
 </section>
@@ -617,10 +617,6 @@
         localStorage.removeItem('sagamartha_user');
         sessionStorage.removeItem('sagamartha_user');
         currentUser = null;
-        document.getElementById('app-topnav').classList.add('hidden');
-        document.getElementById('app-sidebar').classList.add('hidden');
-        document.getElementById('app-main').classList.remove('ml-64');
-        document.getElementById('app-main').classList.add('ml-0');
         switchView('view-login');
     }
 
@@ -628,19 +624,19 @@
         const stored = localStorage.getItem('sagamartha_user') || sessionStorage.getItem('sagamartha_user');
         if (stored) {
             currentUser = JSON.parse(stored);
-            document.getElementById('app-topnav').classList.replace('hidden', 'flex');
-            document.getElementById('app-sidebar').classList.replace('hidden', 'flex');
-            document.getElementById('app-main').classList.replace('ml-0', 'ml-64');
-            // Ganti nama di navbar
-            const nameEls = document.querySelectorAll('.text-slate-800.leading-none');
-            const roleEls = document.querySelectorAll('.uppercase.tracking-wider.mt-0\\.5');
-            const initialEls = document.querySelectorAll('.text-primary.font-bold');
+            
+            // Update User Profile UI
+            const nameEls = document.querySelectorAll('.text-sm.font-bold.text-slate-800.leading-none');
+            const roleEls = document.querySelectorAll('.text-\\[10px\\].text-slate-400.font-bold.uppercase.tracking-wider.mt-0\\.5');
+            const initialEls = document.querySelectorAll('.w-8.h-8.rounded-full.bg-primary-fixed.flex.items-center.justify-center.text-primary.font-bold');
+            
             if(nameEls.length) nameEls[0].textContent = currentUser.employee_name;
             if(roleEls.length) roleEls[0].textContent = currentUser.role;
             if(initialEls.length) initialEls[0].textContent = currentUser.username.substring(0,2).toUpperCase();
             
             switchView('view-dashboard');
-            // Pre-load data for other pages
+            
+            // Load and Sync Data
             fetchOvertime();
             fetchUsers();
             populateEmployeeDropdowns();
@@ -802,16 +798,38 @@
             viewId = 'view-login';
         }
 
+        const topNav = document.getElementById('app-topnav');
+        const sidebar = document.getElementById('app-sidebar');
+        const main = document.getElementById('app-main');
+
         // Hide all views
         const views = ['view-login', 'view-dashboard', 'view-kinerja', 'view-lembur', 'view-kehadiran', 'view-akun', 'view-pengaturan'];
         views.forEach(id => {
             const el = document.getElementById(id);
-            if(el) { el.classList.remove('block'); el.classList.add('hidden'); }
+            if(el) { el.classList.remove('block', 'flex'); el.classList.add('hidden'); }
         });
+
+        // Toggle App Shell visibility based on view
+        if(viewId === 'view-login') {
+            if(topNav) topNav.classList.add('hidden');
+            if(sidebar) sidebar.classList.add('hidden');
+            if(main) main.className = 'ml-0 pt-0 w-full flex items-center justify-center min-h-screen transition-all';
+        } else {
+            if(topNav) topNav.classList.remove('hidden');
+            if(sidebar) sidebar.classList.remove('hidden');
+            if(main) main.className = 'ml-64 pt-24 px-8 pb-12 min-h-screen transition-all';
+        }
         
         // Show target view
         const target = document.getElementById(viewId);
-        if(target) { target.classList.remove('hidden'); target.classList.add('block'); }
+        if(target) {
+            target.classList.remove('hidden');
+            if(viewId === 'view-login') {
+                target.classList.add('flex');
+            } else {
+                target.classList.add('block');
+            }
+        }
         
         // Reset sidebar button styles
         document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -823,6 +841,14 @@
         if (activeBtn) {
             activeBtn.className = 'nav-btn flex items-center gap-3 px-4 py-3 bg-white text-[#00445b] font-bold shadow-sm rounded-lg text-sm';
         }
+
+        // Synchronize Top Navbar links (optional if they exists)
+        document.querySelectorAll('#app-topnav a').forEach(a => {
+            a.className = 'text-slate-500 hover:text-cyan-700 transition-colors font-headline font-semibold text-sm';
+            if(a.getAttribute('href').includes(viewId)) {
+                a.className = 'text-cyan-900 border-b-2 border-cyan-800 pb-1 font-headline font-semibold text-sm';
+            }
+        });
     };
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -1374,6 +1400,7 @@
         // Panggil saat halaman dimuat
         populateEmployeeDropdowns();
         fetchPerformanceData();
+        switchView('view-login');
 
         // Initialize Session Check
         setTimeout(initSession, 100);
