@@ -219,7 +219,7 @@
 <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center pr-6">Persetujuan</th>
 </tr>
 </thead>
-<tbody class="divide-y divide-slate-100">
+<tbody id="dataTableBody" class="divide-y divide-slate-100">
 
 <!-- Multi Target Example - Row 1 -->
 <tr class="hover:bg-slate-50/80 transition-colors group">
@@ -401,6 +401,72 @@
                 }
             }
         });
+
+        // Integrasi Fetch API dari Backend Render
+        async function fetchPerformanceData() {
+            try {
+                // Endpoint API dari Render.com
+                const response = await fetch('https://sagamartha.onrender.com/api/performance');
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                const tbody = document.getElementById('dataTableBody');
+                
+                // Jika ada data asli dari backend, timpa mockup HTML
+                if (data && data.length > 0) {
+                    tbody.innerHTML = ''; 
+                    data.forEach(item => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'hover:bg-slate-50/80 transition-colors group';
+                        
+                        // Layout status warna hijau atau kuning berdasarkan status
+                        let statusColor = "bg-amber-50 text-amber-700 border-amber-200";
+                        if(item.status === "approved") statusColor = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                        if(item.status === "rejected") statusColor = "bg-red-50 text-red-700 border-red-200";
+                        
+                        tr.innerHTML = `
+                            <td class="p-3 text-xs font-mono text-slate-400 pl-6">#${item.id || '-'}</td>
+                            <td class="p-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-bold text-xs">
+                                        ${item.employee_name.substring(0,2).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-800">${item.employee_name}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="p-3 text-xs text-slate-600 font-medium">${item.work_date}</td>
+                            <td class="p-3">
+                                <span class="px-2 py-1 bg-surface-container-low text-slate-700 text-[10px] font-bold rounded">${item.project_title}</span>
+                            </td>
+                            <td class="p-3 text-xs text-slate-600"><p class="line-clamp-2">${item.target_description}</p></td>
+                            <td class="p-3 text-xs font-bold text-slate-800 text-right">${item.daily_target}</td>
+                            <td class="p-3 text-xs font-bold text-emerald-600 text-right">${item.daily_performance}</td>
+                            <td class="p-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 h-1.5 w-12 bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="h-full bg-emerald-500" style="width: ${item.achievement_percent}%"></div>
+                                    </div>
+                                    <span class="text-[10px] font-bold text-emerald-600">${item.achievement_percent}%</span>
+                                </div>
+                            </td>
+                            <td class="p-3 text-xs text-slate-400">—</td>
+                            <td class="p-3 text-center pr-6">
+                                <span class="px-2 py-0.5 border ${statusColor} text-[10px] font-bold rounded-full uppercase">${item.status}</span>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (err) {
+                console.warn('Gagal memuat API dari backend, menampilkan data mockup: ', err);
+            }
+        }
+        
+        // Panggil saat halaman dimuat
+        fetchPerformanceData();
+
     });
 </script>
 </body>
