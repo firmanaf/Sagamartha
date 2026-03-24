@@ -599,13 +599,23 @@
     }
 
     // Modal logic
-    function openTargetModal(preSelectedEmployee = null) {
+    async function openTargetModal(preSelectedEmployee = null) {
+        // Pastikan dropdown sudah terisi jika belum
+        if(!window.allUsers || window.allUsers.length === 0) {
+            await populateEmployeeDropdowns();
+        }
+
         document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
         
         // Populate modal fields if preSelectedEmployee is provided
         if(preSelectedEmployee) {
             const select = document.getElementById('input-employee');
-            if(select) select.value = preSelectedEmployee;
+            if(select) {
+                // Beri sedikit delay untuk memastikan DOM select terupdate opsi-opsinya
+                setTimeout(() => {
+                    select.value = preSelectedEmployee;
+                }, 50);
+            }
             document.getElementById('input-project').focus();
         }
 
@@ -812,52 +822,67 @@
         window.allUsers = [];
 
         // Populate employee dropdowns from API
-        async function populateEmployeeDropdowns() {
-            try {
-                const res = await fetch('https://sagamartha.onrender.com/api/users');
-                if(!res.ok) return;
-                const users = await res.json();
-                window.allUsers = users;
-
-                // Dashboard filter
-                const dashSelect = document.getElementById('dashboard-employee-filter');
-                if(dashSelect) {
-                    dashSelect.innerHTML = '<option value="">Semua Karyawan</option>';
-                    users.forEach(u => {
-                        dashSelect.innerHTML += '<option value="' + u.employee_name + '">' + u.employee_name + ' (' + u.role + ')</option>';
-                    });
-                }
-
-                // Modal target employee
-                const modalSelect = document.getElementById('input-employee');
-                if(modalSelect) {
-                    modalSelect.innerHTML = '';
-                    users.forEach(u => {
-                        modalSelect.innerHTML += '<option value="' + u.employee_name + '">' + u.employee_name + '</option>';
-                    });
-                }
-
-                // Overtime employee selector
-                const otSelect = document.getElementById('ot-employee');
-                if(otSelect) {
-                    otSelect.innerHTML = '';
-                    users.forEach(u => {
-                        otSelect.innerHTML += '<option value="' + u.employee_name + '">' + u.employee_name + '</option>';
-                    });
-                }
-
-                // Overtime filter dropdown
-                const otFilter = document.getElementById('ot-filter-employee');
-                if(otFilter) {
-                    otFilter.innerHTML = '<option value="">Semua Karyawan</option>';
-                    users.forEach(u => {
-                        otFilter.innerHTML += '<option value="' + u.employee_name + '">' + u.employee_name + '</option>';
-                    });
-                }
-            } catch(e) {
-                console.warn('Gagal memuat daftar karyawan:', e);
-            }
+        async function populateEmployeeDropdowns(forceRefresh = false) {
+    try {
+        if (!window.allUsers || window.allUsers.length === 0 || forceRefresh) {
+            const res = await fetch('https://sagamartha.onrender.com/api/users');
+            if (!res.ok) return;
+            window.allUsers = await res.json();
         }
+        
+        const users = window.allUsers;
+
+        // Dashboard filter
+        const dashSelect = document.getElementById('dashboard-employee-filter');
+        if (dashSelect) {
+            dashSelect.innerHTML = '<option value="">Semua Karyawan</option>';
+            users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.employee_name;
+                opt.textContent = `${u.employee_name} (${u.role})`;
+                dashSelect.appendChild(opt);
+            });
+        }
+
+        // Modal target employee
+        const modalSelect = document.getElementById('input-employee');
+        if (modalSelect) {
+            modalSelect.innerHTML = '<option value="" disabled selected>Pilih Karyawan...</option>';
+            users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.employee_name;
+                opt.textContent = u.employee_name;
+                modalSelect.appendChild(opt);
+            });
+        }
+
+        // Overtime employee selector
+        const otSelect = document.getElementById('ot-employee');
+        if (otSelect) {
+            otSelect.innerHTML = '<option value="" disabled selected>Pilih Karyawan...</option>';
+            users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.employee_name;
+                opt.textContent = u.employee_name;
+                otSelect.appendChild(opt);
+            });
+        }
+
+        // Overtime filter dropdown
+        const otFilter = document.getElementById('ot-filter-employee');
+        if (otFilter) {
+            otFilter.innerHTML = '<option value="">Semua Karyawan</option>';
+            users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.employee_name;
+                opt.textContent = u.employee_name;
+                otFilter.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.warn('Gagal memuat daftar karyawan:', e);
+    }
+}
 
         // Monitoring Target Hari Ini (Tanpa Target)
         function updateMissingTargetsWidget() {
