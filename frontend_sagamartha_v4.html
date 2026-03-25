@@ -1545,6 +1545,29 @@
     }
 
     window.deleteUser = async (username) => { if(confirm('Hapus user "' + username + '"?')) { try { const res = await fetch('https://sagamartha.onrender.com/api/users/' + username, { method: 'DELETE' }); if(res.ok) fetchUsers(); } catch(e) { alert('Net error'); } } };
+    
+    window.promptResetPassword = async (username) => {
+        if(confirm('Reset password user "' + username + '" ke default ("1234")?')) {
+            try {
+                const res = await fetch(`https://sagamartha.onrender.com/api/users/${username}/password?admin_override=true`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        old_password: 'dummy', 
+                        new_password: '1234' 
+                    })
+                });
+                if(res.ok) {
+                    alert('Password user "' + username + '" berhasil direset ke "1234".');
+                } else {
+                    const data = await res.json();
+                    alert('Gagal reset: ' + (data.detail || 'Error'));
+                }
+            } catch(e) {
+                alert('Kesalahan jaringan saat reset password.');
+            }
+        }
+    };
 
     function renderTable() {
         const tbody = document.getElementById('dataTableBody');
