@@ -178,5 +178,14 @@
     "supervisor_name": "Annisa Dira Hariyanto, S.T., M.P.W.K.",
     "is_active": true,
     "must_change_password": true
+  },
+  {
+    "username": "diyah",
+    "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+    "role": "karyawan",
+    "employee_name": "Diyah Anggraeni Putri",
+    "supervisor_name": "Dimas Tri Rendra Graha, S.T., M. Ars.",
+    "is_active": true,
+    "must_change_password": true
   }
 ]
