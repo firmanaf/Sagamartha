@@ -19,10 +19,14 @@ app.add_middleware(
 )
 
 # In-memory storage mimicking DB for prototype
-USERS_FILE = "enterprise_users_pwkv4.json"
-RECORDS_FILE = "enterprise_records.json"  # Converting CSV to JSON approach for simple API
-ATTENDANCE_FILE = "enterprise_attendance.json"
-OVERTIME_FILE = "enterprise_overtime.json"
+DATA_DIR = os.getenv("DATA_DIR", ".")
+if DATA_DIR != "." and not os.path.exists(DATA_DIR):
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+USERS_FILE = os.path.join(DATA_DIR, "enterprise_users_pwkv4.json")
+RECORDS_FILE = os.path.join(DATA_DIR, "enterprise_records.json")
+ATTENDANCE_FILE = os.path.join(DATA_DIR, "enterprise_attendance.json")
+OVERTIME_FILE = os.path.join(DATA_DIR, "enterprise_overtime.json")
 
 class UserBase(BaseModel):
     username: str
@@ -76,6 +80,18 @@ class PasswordChangeRequest(BaseModel):
 
 def load_json(path, default):
     if not os.path.exists(path):
+        # Migrasi: Jika di /data belum ada, tapi di root project ada, copy ke /data
+        basename = os.path.basename(path)
+        if os.path.exists(basename):
+            print(f"DEBUG: Migrating {basename} from root to {path}")
+            try:
+                with open(basename, "r", encoding="utf-8") as fs:
+                    data = json.load(fs)
+                with open(path, "w", encoding="utf-8") as fd:
+                    json.dump(data, fd, indent=2)
+                return data
+            except Exception as e:
+                print(f"DEBUG: Migration error for {basename}: {e}")
         return default
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
