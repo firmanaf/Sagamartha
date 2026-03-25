@@ -108,6 +108,9 @@
 <a class="nav-btn flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:bg-cyan-50 transition-all rounded-lg text-sm font-medium" href="javascript:switchView('view-lembur')" id="nav-view-lembur">
 <span class="material-symbols-outlined">history_toggle_off</span> Lembur
 </a>
+<a class="nav-btn flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:bg-cyan-50 transition-all rounded-lg text-sm font-medium" href="javascript:switchView('view-kehadiran')" id="nav-view-kehadiran">
+<span class="material-symbols-outlined">schedule</span> Kehadiran
+</a>
 <a class="nav-btn flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:bg-cyan-50 transition-all rounded-lg text-sm font-medium" href="javascript:switchView('view-akun')" id="nav-view-akun">
 <span class="material-symbols-outlined">group</span> Manajemen Akun
 </a>
@@ -188,6 +191,21 @@
 </select>
 </div>
 </header>
+<!-- Mobile Attendance Status Card (Quick Access) -->
+<div id="dash-attendance-card" class="mb-6 bg-gradient-to-r from-primary to-primary-container p-5 rounded-xl shadow-md text-white">
+    <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <span class="material-symbols-outlined text-white text-2xl">event_available</span>
+            </div>
+            <div>
+                <h3 class="font-bold text-sm tracking-tight opacity-90">Kehadiran (Absensi)</h3>
+                <p id="dash-att-status" class="text-xs font-medium uppercase tracking-widest mt-0.5">Memuat status...</p>
+            </div>
+        </div>
+        <button onclick="switchView('view-kehadiran')" class="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all">Kelola</button>
+    </div>
+</div>
 <!-- Analytics Charts Section -->
 <div class="mb-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2 bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col">
@@ -1325,6 +1343,7 @@
         const btnOut = document.getElementById('btn-checkout');
         const locInfo = document.getElementById('attendance-location-info');
         const coordsEl = document.getElementById('attendance-coords');
+        const dashStatusText = document.getElementById('dash-att-status');
         if(!statusText || !btnIn || !btnOut) return;
 
         const myRecord = window.allAttendanceData.find(r =>
@@ -1334,11 +1353,13 @@
 
         if(!myRecord) {
             statusText.textContent = 'Belum check-in hari ini.';
+            if(dashStatusText) dashStatusText.textContent = '⛔ Belum Check-In';
             btnIn.disabled = false; btnIn.classList.remove('disabled:opacity-40');
             btnOut.disabled = true;
             if(locInfo) locInfo.classList.add('hidden');
         } else if(!myRecord.check_out_time) {
             statusText.textContent = `✅ Sudah check-in pukul ${myRecord.check_in_time}`;
+            if(dashStatusText) dashStatusText.textContent = `✅ Aktif since ${myRecord.check_in_time}`;
             statusText.className = 'text-xs text-emerald-600 font-bold mt-1';
             btnIn.disabled = true; btnIn.classList.add('opacity-40', 'cursor-not-allowed');
             btnOut.disabled = false; btnOut.classList.remove('disabled:opacity-40', 'disabled:cursor-not-allowed');
@@ -1348,6 +1369,7 @@
             }
         } else {
             statusText.textContent = `✅ Check-in: ${myRecord.check_in_time} — Check-out: ${myRecord.check_out_time}`;
+            if(dashStatusText) dashStatusText.textContent = '🏁 Selesai Hari Ini';
             statusText.className = 'text-xs text-emerald-600 font-bold mt-1';
             btnIn.disabled = true; btnIn.classList.add('opacity-40', 'cursor-not-allowed');
             btnOut.disabled = true; btnOut.classList.add('opacity-40', 'cursor-not-allowed');
