@@ -210,15 +210,6 @@
         </div>
     </div>
     </div>
-
-    <!-- Row 2: Real-time Map Dashboard -->
-    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col mt-6">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><span class="material-symbols-outlined text-primary text-lg">location_on</span> Lokasi Karyawan Terkini</h3>
-            <span class="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold uppercase tracking-wider">Live Map</span>
-        </div>
-        <div id="dashboard-map" class="rounded-lg overflow-hidden border border-slate-100" style="height: 300px; width: 100%; z-index: 10;"></div>
-    </div>
 </section>
 
 <!-- VIEW: KINERJA -->
@@ -476,32 +467,32 @@
 <section id="view-akun" class="hidden">
 <header class="mb-8">
 <h1 class="text-3xl font-headline font-bold text-primary tracking-tight">Manajemen Akun Enterprise</h1>
-<p class="text-slate-500 font-medium text-sm">Daftar seluruh akun karyawan dan hierarki supervisor.</p>
+<p class="text-slate-500 font-medium text-sm">Review seluruh akun karyawan dan struktur hierarki supervisor (SAGA METRIC Core).</p>
 </header>
 <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
 <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-wrap justify-between items-center gap-4">
-    <span class="text-sm font-bold text-primary">Master Data User</span>
+    <span class="text-sm font-bold text-primary flex items-center gap-2"><span class="material-symbols-outlined">badge</span> Master Data & Hierarki Akun</span>
     <div class="flex items-center gap-4">
         <div class="relative">
             <span class="material-symbols-outlined absolute left-3 top-2 text-slate-400 text-lg">search</span>
-            <input id="user-filter-search" oninput="fetchUsers()" class="pl-10 pr-4 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/20 outline-none w-64 shadow-sm" placeholder="Cari nama atau username..." type="text"/>
+            <input id="user-filter-search" oninput="fetchUsers()" class="pl-10 pr-4 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/20 outline-none w-64 shadow-sm" placeholder="Cari nama, username, atau supervisor..." type="text"/>
         </div>
         <button onclick="fetchUsers()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Refresh"><span class="material-symbols-outlined">sync</span></button>
     </div>
 </div>
 <div class="overflow-x-auto">
-    <table class="w-full text-left border-collapse min-w-[800px]">
+    <table class="w-full text-left border-collapse min-w-[850px]">
         <thead>
             <tr class="bg-slate-50 border-b border-slate-200">
-                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider pl-6">Username</th>
-                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Nama Lengkap</th>
-                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Role</th>
-                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Supervisor</th>
-                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center">Aksi</th>
+                <th class="p-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider pl-8">Username</th>
+                <th class="p-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Nama Lengkap</th>
+                <th class="p-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Role</th>
+                <th class="p-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Supervisor / Atasan Langsung</th>
+                <th class="p-4 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center">Aksi</th>
             </tr>
         </thead>
         <tbody id="usersTableBody" class="divide-y divide-slate-100">
-            <tr><td colspan="5" class="p-6 text-center text-slate-400 text-sm">Memuat data user...</td></tr>
+            <tr><td colspan="5" class="p-10 text-center text-slate-400 text-sm">Memuat data seluruh akun...</td></tr>
         </tbody>
     </table>
 </div>
@@ -850,11 +841,12 @@
         }
 
         // Fix Leaflet map rendering when views become visible
-        if(viewId === 'view-dashboard') {
-            setTimeout(() => { refreshDashboardMap(); }, 300);
-        } else if(viewId === 'view-kehadiran') {
+        if(viewId === 'view-kehadiran') {
             setTimeout(() => { refreshAttendanceMap(); }, 300);
         }
+
+        // Refresh users when viewing account management
+        if(viewId === 'view-akun') fetchUsers();
     };
 
     window.toggleSidebar = function() {
@@ -1237,7 +1229,6 @@
     // ========== ATTENDANCE (KEHADIRAN) ==========
     window.allAttendanceData = [];
     window.attendanceMap = null;
-    window.dashboardMap = null;
     window.todayAttendanceRecord = null;
 
     async function fetchAttendance() {
@@ -1248,7 +1239,6 @@
             renderAttendanceTable();
             syncAttendanceStatus();
             refreshAttendanceMap();
-            refreshDashboardMap();
         } catch(e) { console.warn('Gagal memuat kehadiran:', e); }
     }
 
@@ -1508,11 +1498,30 @@
             if(!tbody) return;
             tbody.innerHTML = '';
             data.forEach(u => {
-                const badge = u.role === 'admin' ? 'bg-primary text-white' : (u.role === 'supervisor' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600');
-                let action = (currentUser && currentUser.role === 'admin' && u.username !== currentUser.username) ? `<button onclick="deleteUser('${u.username}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-colors"><span class="material-symbols-outlined text-lg">person_remove</span></button>` : '-';
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-slate-50/80 transition-colors';
-                tr.innerHTML = `<td class="p-3 text-xs font-mono text-slate-600 pl-6">${u.username}</td><td class="p-3 text-sm font-bold text-slate-800">${u.employee_name}</td><td class="p-3"><span class="px-2 py-0.5 text-[10px] font-bold rounded uppercase ${badge}">${u.role}</span></td><td class="p-3 text-xs text-slate-500">${u.supervisor_name || '-'}</td><td class="p-3 text-center">${action}</td>`;
+                let roleColor = u.role === 'admin' ? 'bg-rose-50 text-rose-700 border-rose-100' : (u.role === 'supervisor' ? 'bg-cyan-50 text-cyan-700 border-cyan-100' : 'bg-slate-50 text-slate-700 border-slate-100');
+                let action = (currentUser && currentUser.role === 'admin' && u.username !== currentUser.username) 
+                    ? `<button onclick="deleteUser('${u.username}')" class="text-red-400 hover:text-red-600 p-1.5 rounded-lg transition-colors" title="Hapus Akun"><span class="material-symbols-outlined text-lg">person_remove</span></button>` 
+                    : '<span class="text-[10px] text-slate-300">Protected</span>';
+                
+                tr.innerHTML = `
+                    <td class="p-4 pl-8 text-xs font-mono text-slate-500">${u.username}</td>
+                    <td class="p-4 text-sm font-bold text-slate-800">${u.employee_name}</td>
+                    <td class="p-4">
+                        <span class="px-2 py-0.5 border ${roleColor} text-[10px] font-bold rounded-full uppercase">${u.role}</span>
+                    </td>
+                    <td class="p-4">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-sm text-slate-300">account_tree</span>
+                            <span class="text-xs text-slate-600 font-medium">${u.supervisor_name || '<em class="text-slate-300">Top Level</em>'}</span>
+                        </div>
+                    </td>
+                    <td class="p-4 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="promptResetPassword('${u.username}')" class="text-primary hover:bg-primary/5 p-1.5 rounded-lg transition-colors" title="Reset Password"><span class="material-symbols-outlined text-lg">lock_reset</span></button>
+                            ${action}
+                        </div>
+                    </td>
+                `;
                 tbody.appendChild(tr);
             });
         } catch(e) { console.warn('Users error:', e); }
