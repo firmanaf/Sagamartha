@@ -836,9 +836,13 @@
         });
         
         // Highlight active sidebar button
-        const activeBtn = document.getElementById('nav-' + viewId);
         if (activeBtn) {
             activeBtn.className = 'nav-btn flex items-center gap-3 px-4 py-3 bg-white text-[#00445b] font-bold shadow-sm rounded-lg text-sm';
+        }
+
+        // Fix Leaflet map rendering when kehadiran view becomes visible
+        if(viewId === 'view-kehadiran' && window.attendanceMap) {
+            setTimeout(() => { window.attendanceMap.invalidateSize(); }, 200);
         }
     };
 
