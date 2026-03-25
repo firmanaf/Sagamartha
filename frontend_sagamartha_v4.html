@@ -777,7 +777,7 @@
         }
 
         const payload = {
-            id: 'TGT-' + Math.floor(Math.random() * 100000),
+            id: editPerformanceId || ('TGT-' + Math.floor(Math.random() * 100000)),
             employee_name: targetEmployee,
             work_date: document.getElementById('input-date').value,
             project_title: document.getElementById('input-project').value,
