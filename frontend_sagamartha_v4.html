@@ -456,6 +456,7 @@
                 <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-right">Durasi</th>
                 <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center">Lokasi</th>
                 <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center admin-action-col">Aksi</th>
             </tr>
         </thead>
         <tbody id="attendanceTableBody" class="divide-y divide-slate-100">
@@ -1296,6 +1297,19 @@
         } catch(e) { console.warn('Gagal memuat kehadiran:', e); }
     }
 
+    window.resetAttendance = async (id) => {
+        if(!confirm('Reset/Hapus record absensi ini? Pekerjaan ini permanen.')) return;
+        try {
+            const res = await fetch(`https://sagamartha.onrender.com/api/attendance/${id}`, { method: 'DELETE' });
+            if(res.ok) {
+                fetchAttendance();
+            } else {
+                const d = await res.json();
+                alert('Gagal: ' + d.detail);
+            }
+        } catch(e) { alert('Net error'); }
+    };
+
     function syncAttendanceStatus() {
         const today = new Date().toISOString().split('T')[0];
         const statusText = document.getElementById('attendance-status-text');
@@ -1438,9 +1452,11 @@
             const locLink = r.check_in_lat ? `<a href="https://www.google.com/maps?q=${r.check_in_lat},${r.check_in_lng}" target="_blank" class="text-primary hover:underline text-[10px]">📍 Lihat</a>` : '—';
             const statusColor = r.check_out_time ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200';
             const statusText = r.check_out_time ? 'Selesai' : 'Aktif';
+            const isAdmin = currentUser && currentUser.role === 'admin';
+            const actionBtn = isAdmin ? `<button onclick="resetAttendance('${r.id}')" class="text-red-400 hover:text-red-600 p-1" title="Reset Absensi"><span class="material-symbols-outlined text-lg">history</span></button>` : '—';
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50/80 transition-colors';
-            tr.innerHTML = `<td class="p-3 text-sm font-bold text-slate-800 pl-6">${r.employee_name}</td><td class="p-3 text-xs text-slate-600">${r.attendance_date}</td><td class="p-3 text-xs font-bold text-emerald-600">${r.check_in_time}</td><td class="p-3 text-xs font-bold ${r.check_out_time ? 'text-red-500' : 'text-slate-300'}">${r.check_out_time || '—'}</td><td class="p-3 text-xs font-bold text-slate-800 text-right">${dur}</td><td class="p-3 text-center">${locLink}</td><td class="p-3 text-center"><span class="px-2 py-0.5 border ${statusColor} text-[10px] font-bold rounded-full uppercase">${statusText}</span></td>`;
+            tr.innerHTML = `<td class="p-3 text-sm font-bold text-slate-800 pl-6">${r.employee_name}</td><td class="p-3 text-xs text-slate-600">${r.attendance_date}</td><td class="p-3 text-xs font-bold text-emerald-600">${r.check_in_time}</td><td class="p-3 text-xs font-bold ${r.check_out_time ? 'text-red-500' : 'text-slate-300'}">${r.check_out_time || '—'}</td><td class="p-3 text-xs font-bold text-slate-800 text-right">${dur}</td><td class="p-3 text-center">${locLink}</td><td class="p-3 text-center"><span class="px-2 py-0.5 border ${statusColor} text-[10px] font-bold rounded-full uppercase">${statusText}</span></td><td class="p-3 text-center admin-action-col">${actionBtn}</td>`;
             tbody.appendChild(tr);
         });
     };

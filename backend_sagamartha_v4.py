@@ -252,6 +252,18 @@ def checkout_attendance(record_id: str, req: CheckoutRequest):
             return {"message": "Check-out berhasil."}
     raise HTTPException(status_code=404, detail="Record absensi tidak ditemukan.")
 
+@app.delete("/api/attendance/{record_id}")
+def delete_attendance(record_id: str):
+    records = load_json(ATTENDANCE_FILE, [])
+    initial_count = len(records)
+    records = [r for r in records if r["id"] != record_id]
+    if len(records) == initial_count:
+        raise HTTPException(status_code=404, detail="Record absensi tidak ditemukan.")
+    
+    with open(ATTENDANCE_FILE, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=2)
+    return {"message": f"Record absensi {record_id} berhasil dihapus/reset."}
+
 @app.get("/api/overtime", response_model=List[OvertimeRecord])
 def get_overtime(user: Optional[str] = None):
     records = load_json(OVERTIME_FILE, [])
