@@ -356,8 +356,9 @@
 
 <!-- Tabel Riwayat Lembur -->
 <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-<div class="p-4 border-b border-slate-100 bg-slate-50/50">
+<div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
 <span class="text-sm font-bold text-primary">Riwayat Pengajuan Lembur</span>
+<button onclick="exportOvertimeCSV()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Download CSV"><span class="material-symbols-outlined">download</span></button>
 </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse min-w-[1000px]">
@@ -1116,6 +1117,29 @@
         const payload = { id: 'OT-'+Math.floor(Math.random()*100000), employee_name: emp, overtime_date: document.getElementById('ot-date').value, start_time: s, end_time: e, duration_hours: dur > 0 ? dur : 0, reason: document.getElementById('ot-reason').value, manager_approval: 'pending', comments: '' };
         try { const res = await fetch('https://sagamartha.onrender.com/api/overtime', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if(res.ok) { alert('Berhasil!'); fetchOvertime(); } } catch(err) { alert('Error'); }
         btn.textContent = 'Kirim Pengajuan';
+    };
+
+    window.exportOvertimeCSV = () => {
+        if(!window.allOvertimeData || window.allOvertimeData.length === 0) return alert('Tidak ada data lembur.');
+        const isPrivileged = currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor');
+        let data = [...window.allOvertimeData];
+        if(!isPrivileged && currentUser) data = data.filter(d => d.employee_name === currentUser.employee_name);
+        const filterVal = document.getElementById('ot-filter-employee')?.value;
+        if(filterVal) data = data.filter(d => d.employee_name === filterVal);
+        const searchVal = document.getElementById('ot-filter-search')?.value.toLowerCase();
+        if(searchVal) data = data.filter(d => d.employee_name.toLowerCase().includes(searchVal) || d.reason.toLowerCase().includes(searchVal));
+        if(data.length === 0) return alert('Tidak ada data sesuai filter.');
+        let csv = '\uFEFFID,Karyawan,Tanggal,Mulai,Selesai,Durasi (jam),Alasan,Status\n';
+        data.forEach(d => {
+            csv += `${d.id},"${d.employee_name}",${d.overtime_date},${d.start_time},${d.end_time},${d.duration_hours},"${d.reason}",${d.manager_approval}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'rekap_lembur_' + new Date().toISOString().split('T')[0] + '.csv';
+        a.click();
+        URL.revokeObjectURL(url);
     };
 
     async function fetchUsers() {
