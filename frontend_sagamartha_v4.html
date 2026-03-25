@@ -841,8 +841,10 @@
         }
 
         // Fix Leaflet map rendering when kehadiran view becomes visible
-        if(viewId === 'view-kehadiran' && window.attendanceMap) {
-            setTimeout(() => { window.attendanceMap.invalidateSize(); }, 200);
+        if(viewId === 'view-kehadiran') {
+            setTimeout(() => {
+                refreshAttendanceMap();
+            }, 300);
         }
     };
 
@@ -1392,12 +1394,18 @@
         const mapContainer = document.getElementById('attendance-map');
         if(!mapContainer) return;
 
+        // Only init map when the container is visible
+        const kehadiranView = document.getElementById('view-kehadiran');
+        if(!kehadiranView || kehadiranView.classList.contains('hidden')) return;
+
         if(!window.attendanceMap) {
             window.attendanceMap = L.map('attendance-map').setView([-7.275, 112.75], 12);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors', maxZoom: 19
             }).addTo(window.attendanceMap);
         }
+
+        window.attendanceMap.invalidateSize();
 
         // Clear existing markers
         window.attendanceMap.eachLayer(layer => { if(layer instanceof L.Marker) window.attendanceMap.removeLayer(layer); });
