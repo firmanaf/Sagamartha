@@ -582,6 +582,14 @@
     // Authentication State
     let currentUser = null;
 
+    window.getLocalToday = () => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     async function doLogin() {
         const user = document.getElementById('login-username').value;
         const pass = document.getElementById('login-password').value;
@@ -728,7 +736,7 @@
             await populateEmployeeDropdowns();
         }
 
-        document.getElementById('input-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('input-date').value = getLocalToday();
         
         // Populate modal fields if preSelectedEmployee is provided
         if(preSelectedEmployee) {
@@ -1089,15 +1097,15 @@
             await populateEmployeeDropdowns();
         }
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalToday();
         const usersWithTargets = new Set();
         (window.allPerformanceData || []).forEach(d => {
-            if(d.work_date === today) usersWithTargets.add(d.employee_name);
+            if(d.work_date === today) usersWithTargets.add(d.employee_name.trim());
         });
 
         // Include both karyawan AND supervisor (exclude admin)
         const missing = (window.allUsers || []).filter(u => 
-            (u.role === 'karyawan' || u.role === 'supervisor') && !usersWithTargets.has(u.employee_name)
+            (u.role === 'karyawan' || u.role === 'supervisor') && !usersWithTargets.has(u.employee_name.trim())
         );
 
         countEl.textContent = missing.length + ' Belum Isi';
@@ -1297,7 +1305,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'rekap_lembur_' + new Date().toISOString().split('T')[0] + '.csv';
+        a.download = 'rekap_lembur_' + getLocalToday() + '.csv';
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -1337,7 +1345,7 @@
     };
 
     function syncAttendanceStatus() {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalToday();
         const statusText = document.getElementById('attendance-status-text');
         const btnIn = document.getElementById('btn-checkin');
         const btnOut = document.getElementById('btn-checkout');
@@ -1347,7 +1355,7 @@
         if(!statusText || !btnIn || !btnOut) return;
 
         const myRecord = window.allAttendanceData.find(r =>
-            currentUser && r.employee_name === currentUser.employee_name && r.attendance_date === today
+            currentUser && r.employee_name.trim() === currentUser.employee_name.trim() && r.attendance_date === today
         );
         window.todayAttendanceRecord = myRecord || null;
 
@@ -1399,7 +1407,7 @@
             const payload = {
                 id: 'ATT-' + Math.floor(Math.random()*100000),
                 employee_name: currentUser.employee_name,
-                attendance_date: now.toISOString().split('T')[0],
+                attendance_date: getLocalToday(),
                 check_in_time: timeStr,
                 check_out_time: '',
                 check_in_lat: loc.lat,
@@ -1452,9 +1460,9 @@
         tbody.innerHTML = '';
         const isPrivileged = currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor');
         let data = [...window.allAttendanceData];
-        if(!isPrivileged && currentUser) data = data.filter(d => d.employee_name === currentUser.employee_name);
+        if(!isPrivileged && currentUser) data = data.filter(d => d.employee_name.trim() === currentUser.employee_name.trim());
         const filterEmp = document.getElementById('att-filter-employee')?.value;
-        if(filterEmp) data = data.filter(d => d.employee_name === filterEmp);
+        if(filterEmp) data = data.filter(d => d.employee_name.trim() === filterEmp.trim());
         const filterDate = document.getElementById('att-filter-date')?.value;
         if(filterDate) data = data.filter(d => d.attendance_date === filterDate);
 
@@ -1548,7 +1556,7 @@
         // Clear existing markers
         window.dashboardMap.eachLayer(layer => { if(layer instanceof L.Marker) window.dashboardMap.removeLayer(layer); });
 
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalToday();
         const todayData = window.allAttendanceData.filter(r => r.attendance_date === today && r.check_in_lat);
         const bounds = [];
 
