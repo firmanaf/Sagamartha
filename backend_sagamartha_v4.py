@@ -228,6 +228,7 @@ def create_attendance(record: AttendanceRecord):
         if r["employee_name"] == record.employee_name and r["attendance_date"] == record.attendance_date:
             raise HTTPException(status_code=400, detail="Data absensi hari ini sudah ada.")
     records.append(record.dict())
+    print(f"DEBUG: Saving attendance to {ATTENDANCE_FILE}. Total records: {len(records)}")
     with open(ATTENDANCE_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=2)
     return {"message": "Attendance recorded successfully."}
@@ -275,6 +276,7 @@ def get_overtime(user: Optional[str] = None):
 def create_overtime(record: OvertimeRecord):
     records = load_json(OVERTIME_FILE, [])
     records.append(record.dict())
+    print(f"DEBUG: Saving overtime to {OVERTIME_FILE}. Total records: {len(records)}")
     with open(OVERTIME_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=2)
     return {"message": "Overtime request created successfully."}

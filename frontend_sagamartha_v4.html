@@ -439,7 +439,10 @@
 <!-- Tabel Riwayat Kehadiran -->
 <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
 <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-    <span class="text-sm font-bold text-primary">Riwayat Kehadiran</span>
+    <div class="flex flex-col">
+        <span class="text-sm font-bold text-primary">Riwayat Kehadiran</span>
+        <span id="attendance-sync-time" class="text-[10px] text-slate-400 font-medium tracking-tight mt-0.5">Belum sinkron</span>
+    </div>
     <div class="flex gap-2">
         <button onclick="fetchAttendance()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Refresh Data"><span class="material-symbols-outlined">refresh</span></button>
         <button onclick="exportAttendanceCSV()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Download CSV"><span class="material-symbols-outlined">download</span></button>
@@ -1289,8 +1292,13 @@
     async function fetchAttendance() {
         try {
             const res = await fetch('https://sagamartha.onrender.com/api/attendance');
-            if(!res.ok) return;
+            if(!res.ok) { console.warn('Fetch data gagal:', res.status); return; }
             window.allAttendanceData = await res.json();
+            console.log('Absensi berhasil dimuat:', window.allAttendanceData.length, 'data');
+            
+            const syncTime = document.getElementById('attendance-sync-time');
+            if(syncTime) syncTime.textContent = 'Sinkronisasi terakhir: ' + new Date().toLocaleTimeString();
+            
             renderAttendanceTable();
             syncAttendanceStatus();
             refreshAttendanceMap();
