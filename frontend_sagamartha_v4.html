@@ -440,7 +440,10 @@
 <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
 <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
     <span class="text-sm font-bold text-primary">Riwayat Kehadiran</span>
-    <button onclick="exportAttendanceCSV()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Download CSV"><span class="material-symbols-outlined">download</span></button>
+    <div class="flex gap-2">
+        <button onclick="fetchAttendance()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Refresh Data"><span class="material-symbols-outlined">refresh</span></button>
+        <button onclick="exportAttendanceCSV()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Download CSV"><span class="material-symbols-outlined">download</span></button>
+    </div>
 </div>
 <div class="overflow-x-auto">
     <table class="w-full text-left border-collapse min-w-[900px]">
@@ -505,7 +508,7 @@
 <div id="modal-target" class="fixed inset-0 bg-black/50 z-[100] hidden items-center justify-center p-4">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col">
         <div class="bg-primary px-6 py-4 flex justify-between items-center text-white">
-            <h2 class="font-headline font-bold text-lg">Input Target Harian</h2>
+            <h2 id="modal-target-title" class="font-headline font-bold text-lg">Input Target Harian</h2>
             <button onclick="closeTargetModal()" class="hover:bg-white/20 rounded-full p-1 transition-colors"><span class="material-symbols-outlined">close</span></button>
         </div>
         <div class="p-6 flex flex-col gap-4">
@@ -686,7 +689,18 @@
     }
 
     // Modal logic
+    let editPerformanceId = null;
+
     window.openTargetModal = async function(preSelectedEmployee = null) {
+        editPerformanceId = null;
+        document.getElementById('modal-target-title').textContent = 'Input Target Harian';
+        document.getElementById('btn-submit-target').textContent = 'Simpan Data';
+        
+        // Reset fields
+        document.getElementById('input-project').value = '';
+        document.getElementById('input-desc').value = '';
+        document.getElementById('input-target').value = '';
+        document.getElementById('input-achievement').value = '';
         // Pastikan dropdown sudah terisi jika belum
         if(!window.allUsers || window.allUsers.length === 0) {
             await populateEmployeeDropdowns();
@@ -716,8 +730,37 @@
         document.getElementById('modal-target').classList.remove('hidden');
     }
     
+    window.openEditPerformanceModal = async function(id) {
+        const item = window.allPerformanceData.find(p => p.id === id);
+        if(!item) return;
+        
+        editPerformanceId = id;
+        document.getElementById('modal-target-title').textContent = 'Edit Target & Capaian';
+        document.getElementById('btn-submit-target').textContent = 'Update Perubahan';
+        
+        await populateEmployeeDropdowns();
+        
+        document.getElementById('input-employee').value = item.employee_name;
+        document.getElementById('input-date').value = item.work_date;
+        document.getElementById('input-project').value = item.project_title;
+        document.getElementById('input-category').value = item.target_category || 'Lainnya';
+        document.getElementById('input-desc').value = item.target_description;
+        document.getElementById('input-target').value = item.daily_target;
+        document.getElementById('input-achievement').value = item.daily_performance;
+
+        // Show employee selector if admin/supervisor
+        const wrapper = document.getElementById('input-employee-wrapper');
+        if(currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor')) {
+            wrapper.classList.remove('hidden');
+        } else {
+            wrapper.classList.add('hidden');
+        }
+        document.getElementById('modal-target').classList.remove('hidden');
+    }
+
     window.closeTargetModal = function() {
         document.getElementById('modal-target').classList.add('hidden');
+        editPerformanceId = null;
     }
 
     window.submitTarget = async function() {
@@ -749,24 +792,29 @@
             payload.achievement_percent = Math.min(100, Math.round((payload.daily_performance / payload.daily_target) * 100));
         }
 
+        const method = editPerformanceId ? 'PUT' : 'POST';
+        const url = editPerformanceId 
+            ? `https://sagamartha.onrender.com/api/performance/${editPerformanceId}`
+            : 'https://sagamartha.onrender.com/api/performance';
+
         try {
-            const res = await fetch('https://sagamartha.onrender.com/api/performance', {
-                method: 'POST',
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
             if(res.ok) {
-                alert('Data berhasil disimpan!');
+                alert(editPerformanceId ? 'Data berhasil diperbarui!' : 'Data berhasil disimpan!');
                 closeTargetModal();
-                fetchPerformanceData(); // refresh table
+                fetchPerformanceData(); 
             } else {
                 const data = await res.json();
-                alert('Gagal: ' + data.detail);
+                alert('Gagal: ' + (data.detail || 'Terjadi kesalahan'));
             }
         } catch(e) {
             alert('Kesalahan jaringan.');
         }
-        btn.textContent = 'Simpan Data';
+        btn.textContent = editPerformanceId ? 'Update Perubahan' : 'Simpan Data';
     }
 
     window.deletePerformance = async function(id) {
@@ -1580,10 +1628,57 @@
             let color = "bg-amber-50 text-amber-700 border-amber-200";
             if(item.status === "approved") color = "bg-emerald-50 text-emerald-700 border-emerald-200";
             if(item.status === "rejected") color = "bg-red-50 text-red-700 border-red-200";
-            let admin = (currentUser && currentUser.role === 'admin') ? `<button onclick="deletePerformance('${item.id}')" class="text-red-500 hover:text-red-700 p-1.5 rounded-lg transition-colors"><span class="material-symbols-outlined text-lg">delete</span></button>` : '-';
+            
+            const isPrivileged = currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor');
+            let actions = '';
+            
+            if(isPrivileged) {
+                // Edit button for all records
+                actions += `<button onclick="openEditPerformanceModal('${item.id}')" class="text-amber-500 hover:bg-amber-50 p-1.5 rounded-lg transition-colors" title="Edit Target/Capaian"><span class="material-symbols-outlined text-lg">edit</span></button>`;
+                
+                // Approve/Reject only if pending
+                if(item.status === 'pending') {
+                    actions += `<button onclick="approvePerformance('${item.id}', 'approved')" class="text-emerald-500 hover:bg-emerald-50 p-1.5 rounded-lg transition-colors" title="Setujui"><span class="material-symbols-outlined text-lg">check_circle</span></button>`;
+                    actions += `<button onclick="approvePerformance('${item.id}', 'rejected')" class="text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors" title="Tolak"><span class="material-symbols-outlined text-lg">cancel</span></button>`;
+                }
+                
+                // Admin can delete
+                if(currentUser.role === 'admin') {
+                    actions += `<button onclick="deletePerformance('${item.id}')" class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg transition-colors" title="Hapus"><span class="material-symbols-outlined text-lg">delete</span></button>`;
+                }
+            } else {
+                actions = '-';
+            }
+
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50/80 transition-colors group';
-            tr.innerHTML = `<td class="p-3 text-xs font-mono text-slate-400 pl-6">#${item.id || '-'}</td><td class="p-3"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-bold text-xs">${item.employee_name.substring(0,2).toUpperCase()}</div><div><p class="text-sm font-bold text-slate-800">${item.employee_name}</p></div></div></td><td class="p-3 text-xs text-slate-600 font-medium">${item.work_date}</td><td class="p-3"><span class="px-2 py-1 bg-surface-container-low text-slate-700 text-[10px] font-bold rounded">${item.project_title}</span></td><td class="p-3 text-xs text-slate-600"><p class="line-clamp-2">${item.target_description}</p></td><td class="p-3 text-xs font-bold text-slate-800 text-right">${item.daily_target}</td><td class="p-3 text-xs font-bold text-emerald-600 text-right">${item.daily_performance}</td><td class="p-3"><div class="flex items-center gap-2"><div class="flex-1 h-1.5 w-12 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-emerald-500" style="width: ${item.achievement_percent}%"></div></div><span class="text-[10px] font-bold text-emerald-600">${item.achievement_percent}%</span></div></td><td class="p-3 text-xs text-slate-400">—</td><td class="p-3 text-center pr-6"><span class="px-2 py-0.5 border ${color} text-[10px] font-bold rounded-full uppercase">${item.status}</span></td><td class="p-3 text-center admin-action-col">${admin}</td>`;
+            tr.innerHTML = `
+                <td class="p-3 text-xs font-mono text-slate-400 pl-6">#${item.id || '-'}</td>
+                <td class="p-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center text-cyan-700 font-bold text-xs">${item.employee_name.substring(0,2).toUpperCase()}</div>
+                        <div><p class="text-sm font-bold text-slate-800">${item.employee_name}</p></div>
+                    </div>
+                </td>
+                <td class="p-3 text-xs text-slate-600 font-medium">${item.work_date}</td>
+                <td class="p-3"><span class="px-2 py-1 bg-surface-container-low text-slate-700 text-[10px] font-bold rounded">${item.project_title}</span></td>
+                <td class="p-3 text-xs text-slate-600"><p class="line-clamp-2">${item.target_description}</p></td>
+                <td class="p-3 text-xs font-bold text-slate-800 text-right">${item.daily_target}</td>
+                <td class="p-3 text-xs font-bold text-emerald-600 text-right">${item.daily_performance}</td>
+                <td class="p-3">
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1 h-1.5 w-12 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-emerald-500" style="width: ${item.achievement_percent}%"></div>
+                        </div>
+                        <span class="text-[10px] font-bold text-emerald-600">${item.achievement_percent}%</span>
+                    </div>
+                </td>
+                <td class="p-3 text-xs text-slate-400">—</td>
+                <td class="p-3 text-center pr-6"><span class="px-2 py-0.5 border ${color} text-[10px] font-bold rounded-full uppercase">${item.status}</span></td>
+                <td class="p-3 text-center admin-action-col">
+                    <div class="flex items-center justify-center gap-1">${actions}</div>
+                </td>
+            `;
             tbody.appendChild(tr);
         });
 
@@ -1591,6 +1686,22 @@
         if(document.getElementById('pagination-text')) document.getElementById('pagination-text').textContent = `Menampilkan ${total === 0 ? 0 : start + 1}-${Math.min(start + itemsPerPage, total)} dari ${total} data`;
         if(document.getElementById('pagination-current')) document.getElementById('pagination-current').textContent = window.currentPage;
     }
+
+    window.approvePerformance = async (id, status) => {
+        try {
+            const res = await fetch(`https://sagamartha.onrender.com/api/performance/${id}/approval?approval_status=${status}`, {
+                method: 'PUT'
+            });
+            if(res.ok) {
+                fetchPerformanceData(); 
+            } else {
+                const data = await res.json();
+                alert('Gagal: ' + (data.detail || 'Error'));
+            }
+        } catch(e) {
+            alert('Kesalahan jaringan.');
+        }
+    };
 
     // --- INITIALIZATION ---
     document.addEventListener('DOMContentLoaded', () => {

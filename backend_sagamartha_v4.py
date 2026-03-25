@@ -167,6 +167,23 @@ def create_performance(record: PerformanceRecord):
         json.dump(records, f, indent=2)
     return {"message": "Record created successfully."}
 
+@app.put("/api/performance/{record_id}")
+def update_performance(record_id: str, record: PerformanceRecord):
+    records = load_json(RECORDS_FILE, [])
+    for i, r in enumerate(records):
+        if r["id"] == record_id:
+            # Update fields
+            record_dict = record.dict()
+            # Recalculate achievement if needed
+            if record_dict["daily_target"] > 0:
+                record_dict["achievement_percent"] = Math.min(100, round((record_dict["daily_performance"] / record_dict["daily_target"]) * 100))
+            
+            records[i] = record_dict
+            with open(RECORDS_FILE, "w", encoding="utf-8") as f:
+                json.dump(records, f, indent=2)
+            return {"message": f"Record {record_id} updated successfully."}
+    raise HTTPException(status_code=404, detail="Record not found.")
+
 @app.delete("/api/performance/{record_id}")
 def delete_performance(record_id: str):
     records = load_json(RECORDS_FILE, [])
