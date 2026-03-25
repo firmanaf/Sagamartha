@@ -932,10 +932,15 @@
         }
     }
 
-    function updateMissingTargetsWidget() {
+    async function updateMissingTargetsWidget() {
         const listEl = document.getElementById('missing-targets-list');
         const countEl = document.getElementById('missing-count');
         if(!listEl || !countEl) return;
+
+        // Ensure user list is loaded
+        if(!window.allUsers || window.allUsers.length === 0) {
+            await populateEmployeeDropdowns();
+        }
 
         const today = new Date().toISOString().split('T')[0];
         const usersWithTargets = new Set();
@@ -943,8 +948,9 @@
             if(d.work_date === today) usersWithTargets.add(d.employee_name);
         });
 
+        // Include both karyawan AND supervisor (exclude admin)
         const missing = (window.allUsers || []).filter(u => 
-            u.role === 'karyawan' && !usersWithTargets.has(u.employee_name)
+            (u.role === 'karyawan' || u.role === 'supervisor') && !usersWithTargets.has(u.employee_name)
         );
 
         countEl.textContent = missing.length + ' Belum Isi';
@@ -961,7 +967,8 @@
             const item = document.createElement('div');
             item.className = 'flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-lg hover:border-primary/20 transition-all group';
             let actionBtn = isPrivileged ? `<button onclick="openTargetModal('${u.employee_name}')" class="px-3 py-1.5 bg-white border border-slate-200 text-primary text-[10px] font-bold rounded-md hover:bg-primary hover:text-white transition-all shadow-sm">Tentukan Target</button>` : '';
-            item.innerHTML = `<div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">${u.employee_name.substring(0,2)}</div><div><p class="text-xs font-bold text-slate-800">${u.employee_name}</p><p class="text-[9px] text-slate-400">Supervisor: ${u.supervisor_name || 'N/A'}</p></div></div>${actionBtn}`;
+            const roleBadge = u.role === 'supervisor' ? '<span class="ml-1 px-1.5 py-0.5 bg-cyan-100 text-cyan-700 text-[8px] font-bold rounded uppercase">SPV</span>' : '';
+            item.innerHTML = `<div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">${u.employee_name.substring(0,2)}</div><div><p class="text-xs font-bold text-slate-800">${u.employee_name}${roleBadge}</p><p class="text-[9px] text-slate-400">Supervisor: ${u.supervisor_name || 'N/A'}</p></div></div>${actionBtn}`;
             listEl.appendChild(item);
         });
     }
