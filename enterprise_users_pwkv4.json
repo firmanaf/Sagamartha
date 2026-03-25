@@ -99,7 +99,7 @@
     "must_change_password": true
   },
   {
-    "username": "muhammad",
+    "username": "rohman",
     "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
     "role": "karyawan",
     "employee_name": "Muhammad Kholifatkhur Rohman, S.P.W.K.",
@@ -144,7 +144,7 @@
     "must_change_password": true
   },
   {
-    "username": "muhammad.afri",
+    "username": "naufal",
     "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
     "role": "karyawan",
     "employee_name": "Muhammad Afri Naufal",
