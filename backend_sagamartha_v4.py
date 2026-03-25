@@ -48,6 +48,10 @@ class AttendanceRecord(BaseModel):
     attendance_date: str
     check_in_time: str
     check_out_time: Optional[str] = ""
+    check_in_lat: Optional[float] = None
+    check_in_lng: Optional[float] = None
+    check_out_lat: Optional[float] = None
+    check_out_lng: Optional[float] = None
     status: str = "hadir"
     notes: Optional[str] = ""
 
@@ -210,6 +214,26 @@ def create_attendance(record: AttendanceRecord):
     with open(ATTENDANCE_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=2)
     return {"message": "Attendance recorded successfully."}
+
+class CheckoutRequest(BaseModel):
+    check_out_time: str
+    check_out_lat: Optional[float] = None
+    check_out_lng: Optional[float] = None
+
+@app.put("/api/attendance/{record_id}/checkout")
+def checkout_attendance(record_id: str, req: CheckoutRequest):
+    records = load_json(ATTENDANCE_FILE, [])
+    for r in records:
+        if r["id"] == record_id:
+            if r.get("check_out_time"):
+                raise HTTPException(status_code=400, detail="Sudah check-out sebelumnya.")
+            r["check_out_time"] = req.check_out_time
+            r["check_out_lat"] = req.check_out_lat
+            r["check_out_lng"] = req.check_out_lng
+            with open(ATTENDANCE_FILE, "w", encoding="utf-8") as f:
+                json.dump(records, f, indent=2)
+            return {"message": "Check-out berhasil."}
+    raise HTTPException(status_code=404, detail="Record absensi tidak ditemukan.")
 
 @app.get("/api/overtime", response_model=List[OvertimeRecord])
 def get_overtime(user: Optional[str] = None):

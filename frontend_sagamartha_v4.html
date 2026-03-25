@@ -51,6 +51,8 @@
         .data-table-container { scrollbar-gutter: stable; }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body class="bg-surface font-body text-on-surface antialiased">
 <!-- TopNavBar -->
@@ -385,13 +387,80 @@
 
 <!-- VIEW: KEHADIRAN -->
 <section id="view-kehadiran" class="hidden">
-<header class="mb-8">
-<h1 class="text-3xl font-headline font-bold text-primary tracking-tight">Rekap Kehadiran Terkini</h1>
-<p class="text-slate-500 font-medium text-sm">Memonitor check-in dan check-out harian.</p>
+<header class="mb-6">
+<h1 class="text-3xl font-headline font-bold text-primary tracking-tight">Rekap Kehadiran</h1>
+<p class="text-slate-500 font-medium text-sm">Check-in/check-out harian dan peta lokasi karyawan.</p>
 </header>
-<div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 text-center">
-<p class="text-slate-500 m-8">Log kehadiran belum tersedia di mode demo ini.</p>
+
+<!-- Check-In/Out Card -->
+<div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <h3 class="font-bold text-slate-800 flex items-center gap-2"><span class="material-symbols-outlined text-primary">schedule</span> Absensi Hari Ini</h3>
+            <p id="attendance-status-text" class="text-xs text-slate-400 mt-1">Belum check-in hari ini.</p>
+        </div>
+        <div class="flex gap-3">
+            <button id="btn-checkin" onclick="doCheckIn()" class="px-5 py-2.5 bg-emerald-600 text-white text-sm font-bold rounded-lg shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">login</span> Check-In
+            </button>
+            <button id="btn-checkout" onclick="doCheckOut()" disabled class="px-5 py-2.5 bg-red-500 text-white text-sm font-bold rounded-lg shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                <span class="material-symbols-outlined text-lg">logout</span> Check-Out
+            </button>
+        </div>
+    </div>
+    <div id="attendance-location-info" class="mt-3 hidden">
+        <p class="text-[10px] text-slate-400 flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span> <span id="attendance-coords"></span></p>
+    </div>
 </div>
+
+<!-- Peta Lokasi -->
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+    <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+        <span class="text-sm font-bold text-primary flex items-center gap-2"><span class="material-symbols-outlined text-lg">map</span> Peta Lokasi Karyawan Hari Ini</span>
+        <button onclick="refreshAttendanceMap()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Refresh Peta"><span class="material-symbols-outlined">refresh</span></button>
+    </div>
+    <div id="attendance-map" style="height: 350px; width: 100%;"></div>
+</div>
+
+<!-- Filter -->
+<div class="mb-4 flex flex-wrap items-center gap-4">
+    <div class="flex items-center gap-3">
+        <label class="text-xs font-bold text-slate-500 uppercase">Filter Karyawan:</label>
+        <select id="att-filter-employee" onchange="renderAttendanceTable()" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium shadow-sm cursor-pointer min-w-[180px]">
+            <option value="">Semua Karyawan</option>
+        </select>
+    </div>
+    <div class="flex items-center gap-3">
+        <label class="text-xs font-bold text-slate-500 uppercase">Tanggal:</label>
+        <input id="att-filter-date" type="date" onchange="renderAttendanceTable()" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm shadow-sm"/>
+    </div>
+</div>
+
+<!-- Tabel Riwayat Kehadiran -->
+<section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+<div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+    <span class="text-sm font-bold text-primary">Riwayat Kehadiran</span>
+    <button onclick="exportAttendanceCSV()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Download CSV"><span class="material-symbols-outlined">download</span></button>
+</div>
+<div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse min-w-[900px]">
+        <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider pl-6">Karyawan</th>
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Tanggal</th>
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Check-In</th>
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Check-Out</th>
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-right">Durasi</th>
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center">Lokasi</th>
+                <th class="p-3 text-[11px] font-extrabold text-slate-500 uppercase tracking-wider text-center">Status</th>
+            </tr>
+        </thead>
+        <tbody id="attendanceTableBody" class="divide-y divide-slate-100">
+            <tr><td colspan="7" class="p-6 text-center text-slate-400 text-sm">Memuat data kehadiran...</td></tr>
+        </tbody>
+    </table>
+</div>
+</section>
 </section>
 
 <!-- VIEW: AKUN -->
@@ -550,6 +619,7 @@
             
             // Load and Sync Data
             fetchOvertime();
+            fetchAttendance();
             fetchUsers();
             populateEmployeeDropdowns();
         } else {
@@ -1147,6 +1217,215 @@
         a.download = 'rekap_lembur_' + new Date().toISOString().split('T')[0] + '.csv';
         a.click();
         URL.revokeObjectURL(url);
+    };
+
+    // ========== ATTENDANCE (KEHADIRAN) ==========
+    window.allAttendanceData = [];
+    window.attendanceMap = null;
+    window.todayAttendanceRecord = null;
+
+    async function fetchAttendance() {
+        try {
+            const res = await fetch('https://sagamartha.onrender.com/api/attendance');
+            if(!res.ok) return;
+            window.allAttendanceData = await res.json();
+            renderAttendanceTable();
+            syncAttendanceStatus();
+            refreshAttendanceMap();
+        } catch(e) { console.warn('Gagal memuat kehadiran:', e); }
+    }
+
+    function syncAttendanceStatus() {
+        const today = new Date().toISOString().split('T')[0];
+        const statusText = document.getElementById('attendance-status-text');
+        const btnIn = document.getElementById('btn-checkin');
+        const btnOut = document.getElementById('btn-checkout');
+        const locInfo = document.getElementById('attendance-location-info');
+        const coordsEl = document.getElementById('attendance-coords');
+        if(!statusText || !btnIn || !btnOut) return;
+
+        const myRecord = window.allAttendanceData.find(r =>
+            currentUser && r.employee_name === currentUser.employee_name && r.attendance_date === today
+        );
+        window.todayAttendanceRecord = myRecord || null;
+
+        if(!myRecord) {
+            statusText.textContent = 'Belum check-in hari ini.';
+            btnIn.disabled = false; btnIn.classList.remove('disabled:opacity-40');
+            btnOut.disabled = true;
+            if(locInfo) locInfo.classList.add('hidden');
+        } else if(!myRecord.check_out_time) {
+            statusText.textContent = `✅ Sudah check-in pukul ${myRecord.check_in_time}`;
+            statusText.className = 'text-xs text-emerald-600 font-bold mt-1';
+            btnIn.disabled = true; btnIn.classList.add('opacity-40', 'cursor-not-allowed');
+            btnOut.disabled = false; btnOut.classList.remove('disabled:opacity-40', 'disabled:cursor-not-allowed');
+            if(locInfo && myRecord.check_in_lat) {
+                locInfo.classList.remove('hidden');
+                coordsEl.textContent = `Check-in: ${myRecord.check_in_lat.toFixed(6)}, ${myRecord.check_in_lng.toFixed(6)}`;
+            }
+        } else {
+            statusText.textContent = `✅ Check-in: ${myRecord.check_in_time} — Check-out: ${myRecord.check_out_time}`;
+            statusText.className = 'text-xs text-emerald-600 font-bold mt-1';
+            btnIn.disabled = true; btnIn.classList.add('opacity-40', 'cursor-not-allowed');
+            btnOut.disabled = true; btnOut.classList.add('opacity-40', 'cursor-not-allowed');
+            if(locInfo) { locInfo.classList.remove('hidden'); coordsEl.textContent = 'Kehadiran hari ini sudah selesai.'; }
+        }
+    }
+
+    function getLocation() {
+        return new Promise((resolve, reject) => {
+            if(!navigator.geolocation) return reject('GPS tidak didukung browser.');
+            navigator.geolocation.getCurrentPosition(
+                pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                err => reject('Izin lokasi ditolak atau tidak tersedia. Error: ' + err.message),
+                { enableHighAccuracy: true, timeout: 15000 }
+            );
+        });
+    }
+
+    window.doCheckIn = async function() {
+        if(!currentUser) return alert('Silakan login terlebih dahulu.');
+        const btn = document.getElementById('btn-checkin');
+        btn.textContent = 'Mengambil lokasi...';
+        try {
+            const loc = await getLocation();
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0].substring(0,5);
+            const payload = {
+                id: 'ATT-' + Math.floor(Math.random()*100000),
+                employee_name: currentUser.employee_name,
+                attendance_date: now.toISOString().split('T')[0],
+                check_in_time: timeStr,
+                check_out_time: '',
+                check_in_lat: loc.lat,
+                check_in_lng: loc.lng,
+                check_out_lat: null,
+                check_out_lng: null,
+                status: 'hadir',
+                notes: ''
+            };
+            const res = await fetch('https://sagamartha.onrender.com/api/attendance', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+            });
+            if(res.ok) {
+                alert('Check-in berhasil! Lokasi tercatat.');
+                fetchAttendance();
+            } else {
+                const d = await res.json();
+                alert('Gagal: ' + d.detail);
+            }
+        } catch(e) { alert('Error: ' + e); }
+        btn.innerHTML = '<span class="material-symbols-outlined text-lg">login</span> Check-In';
+    };
+
+    window.doCheckOut = async function() {
+        if(!currentUser || !window.todayAttendanceRecord) return alert('Belum check-in hari ini.');
+        const btn = document.getElementById('btn-checkout');
+        btn.textContent = 'Mengambil lokasi...';
+        try {
+            const loc = await getLocation();
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0].substring(0,5);
+            const res = await fetch('https://sagamartha.onrender.com/api/attendance/' + window.todayAttendanceRecord.id + '/checkout', {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ check_out_time: timeStr, check_out_lat: loc.lat, check_out_lng: loc.lng })
+            });
+            if(res.ok) {
+                alert('Check-out berhasil!');
+                fetchAttendance();
+            } else {
+                const d = await res.json();
+                alert('Gagal: ' + d.detail);
+            }
+        } catch(e) { alert('Error: ' + e); }
+        btn.innerHTML = '<span class="material-symbols-outlined text-lg">logout</span> Check-Out';
+    };
+
+    window.renderAttendanceTable = function() {
+        const tbody = document.getElementById('attendanceTableBody');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        const isPrivileged = currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor');
+        let data = [...window.allAttendanceData];
+        if(!isPrivileged && currentUser) data = data.filter(d => d.employee_name === currentUser.employee_name);
+        const filterEmp = document.getElementById('att-filter-employee')?.value;
+        if(filterEmp) data = data.filter(d => d.employee_name === filterEmp);
+        const filterDate = document.getElementById('att-filter-date')?.value;
+        if(filterDate) data = data.filter(d => d.attendance_date === filterDate);
+
+        // Populate filter dropdown
+        const attFilter = document.getElementById('att-filter-employee');
+        if(attFilter && attFilter.options.length <= 1 && window.allUsers) {
+            window.allUsers.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.employee_name; opt.textContent = u.employee_name;
+                attFilter.appendChild(opt);
+            });
+        }
+
+        if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-400 text-sm">Belum ada data kehadiran.</td></tr>'; return; }
+
+        data.sort((a,b) => b.attendance_date.localeCompare(a.attendance_date));
+        data.forEach(r => {
+            let dur = '—';
+            if(r.check_in_time && r.check_out_time) {
+                const [ih,im] = r.check_in_time.split(':').map(Number);
+                const [oh,om] = r.check_out_time.split(':').map(Number);
+                const mins = (oh*60+om) - (ih*60+im);
+                dur = `${Math.floor(mins/60)}j ${mins%60}m`;
+            }
+            const locLink = r.check_in_lat ? `<a href="https://www.google.com/maps?q=${r.check_in_lat},${r.check_in_lng}" target="_blank" class="text-primary hover:underline text-[10px]">📍 Lihat</a>` : '—';
+            const statusColor = r.check_out_time ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200';
+            const statusText = r.check_out_time ? 'Selesai' : 'Aktif';
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50/80 transition-colors';
+            tr.innerHTML = `<td class="p-3 text-sm font-bold text-slate-800 pl-6">${r.employee_name}</td><td class="p-3 text-xs text-slate-600">${r.attendance_date}</td><td class="p-3 text-xs font-bold text-emerald-600">${r.check_in_time}</td><td class="p-3 text-xs font-bold ${r.check_out_time ? 'text-red-500' : 'text-slate-300'}">${r.check_out_time || '—'}</td><td class="p-3 text-xs font-bold text-slate-800 text-right">${dur}</td><td class="p-3 text-center">${locLink}</td><td class="p-3 text-center"><span class="px-2 py-0.5 border ${statusColor} text-[10px] font-bold rounded-full uppercase">${statusText}</span></td>`;
+            tbody.appendChild(tr);
+        });
+    };
+
+    window.refreshAttendanceMap = function() {
+        const mapContainer = document.getElementById('attendance-map');
+        if(!mapContainer) return;
+
+        if(!window.attendanceMap) {
+            window.attendanceMap = L.map('attendance-map').setView([-7.275, 112.75], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors', maxZoom: 19
+            }).addTo(window.attendanceMap);
+        }
+
+        // Clear existing markers
+        window.attendanceMap.eachLayer(layer => { if(layer instanceof L.Marker) window.attendanceMap.removeLayer(layer); });
+
+        const today = new Date().toISOString().split('T')[0];
+        const todayData = window.allAttendanceData.filter(r => r.attendance_date === today && r.check_in_lat);
+        const bounds = [];
+
+        todayData.forEach(r => {
+            const latlng = [r.check_in_lat, r.check_in_lng];
+            bounds.push(latlng);
+            const status = r.check_out_time ? '🔴 Sudah Checkout' : '🟢 Sedang Aktif';
+            const marker = L.marker(latlng).addTo(window.attendanceMap);
+            marker.bindPopup(`<b>${r.employee_name}</b><br>Check-in: ${r.check_in_time}<br>${status}`);
+        });
+
+        if(bounds.length > 0) {
+            window.attendanceMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+        }
+    };
+
+    window.exportAttendanceCSV = () => {
+        if(window.allAttendanceData.length === 0) return alert('Tidak ada data kehadiran.');
+        let csv = '\uFEFFKaryawan,Tanggal,Check-In,Check-Out,Lat In,Lng In,Lat Out,Lng Out,Status\n';
+        window.allAttendanceData.forEach(d => {
+            csv += `"${d.employee_name}",${d.attendance_date},${d.check_in_time},${d.check_out_time || ''},${d.check_in_lat || ''},${d.check_in_lng || ''},${d.check_out_lat || ''},${d.check_out_lng || ''},${d.status}\n`;
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url;
+        a.download = 'rekap_kehadiran_' + new Date().toISOString().split('T')[0] + '.csv';
+        a.click(); URL.revokeObjectURL(url);
     };
 
     async function fetchUsers() {
