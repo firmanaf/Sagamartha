@@ -210,6 +210,15 @@
         </div>
     </div>
     </div>
+
+    <!-- Row 2: Real-time Map Dashboard -->
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col mt-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2"><span class="material-symbols-outlined text-primary text-lg">location_on</span> Lokasi Karyawan Terkini</h3>
+            <span class="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold uppercase tracking-wider">Live Map</span>
+        </div>
+        <div id="dashboard-map" class="rounded-lg overflow-hidden border border-slate-100" style="height: 300px; width: 100%; z-index: 10;"></div>
+    </div>
 </section>
 
 <!-- VIEW: KINERJA -->
@@ -840,11 +849,11 @@
             activeBtn.className = 'nav-btn flex items-center gap-3 px-4 py-3 bg-white text-[#00445b] font-bold shadow-sm rounded-lg text-sm';
         }
 
-        // Fix Leaflet map rendering when kehadiran view becomes visible
-        if(viewId === 'view-kehadiran') {
-            setTimeout(() => {
-                refreshAttendanceMap();
-            }, 300);
+        // Fix Leaflet map rendering when views become visible
+        if(viewId === 'view-dashboard') {
+            setTimeout(() => { refreshDashboardMap(); }, 300);
+        } else if(viewId === 'view-kehadiran') {
+            setTimeout(() => { refreshAttendanceMap(); }, 300);
         }
     };
 
@@ -1228,6 +1237,7 @@
     // ========== ATTENDANCE (KEHADIRAN) ==========
     window.allAttendanceData = [];
     window.attendanceMap = null;
+    window.dashboardMap = null;
     window.todayAttendanceRecord = null;
 
     async function fetchAttendance() {
@@ -1238,6 +1248,7 @@
             renderAttendanceTable();
             syncAttendanceStatus();
             refreshAttendanceMap();
+            refreshDashboardMap();
         } catch(e) { console.warn('Gagal memuat kehadiran:', e); }
     }
 
@@ -1424,6 +1435,43 @@
 
         if(bounds.length > 0) {
             window.attendanceMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+        }
+    };
+
+    window.refreshDashboardMap = function() {
+        const mapContainer = document.getElementById('dashboard-map');
+        if(!mapContainer) return;
+
+        // Only init map when dashboard is visible
+        const dashboardView = document.getElementById('view-dashboard');
+        if(!dashboardView || dashboardView.classList.contains('hidden')) return;
+
+        if(!window.dashboardMap) {
+            window.dashboardMap = L.map('dashboard-map').setView([-7.275, 112.75], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors', maxZoom: 19
+            }).addTo(window.dashboardMap);
+        }
+
+        window.dashboardMap.invalidateSize();
+
+        // Clear existing markers
+        window.dashboardMap.eachLayer(layer => { if(layer instanceof L.Marker) window.dashboardMap.removeLayer(layer); });
+
+        const today = new Date().toISOString().split('T')[0];
+        const todayData = window.allAttendanceData.filter(r => r.attendance_date === today && r.check_in_lat);
+        const bounds = [];
+
+        todayData.forEach(r => {
+            const latlng = [r.check_in_lat, r.check_in_lng];
+            bounds.push(latlng);
+            const status = r.check_out_time ? '🔴 Sudah Checkout' : '🟢 Sedang Aktif';
+            const marker = L.marker(latlng).addTo(window.dashboardMap);
+            marker.bindPopup(`<b>${r.employee_name}</b><br>Check-in: ${r.check_in_time}<br>${status}`);
+        });
+
+        if(bounds.length > 0) {
+            window.dashboardMap.fitBounds(bounds, { padding: [20, 20], maxZoom: 14 });
         }
     };
 
