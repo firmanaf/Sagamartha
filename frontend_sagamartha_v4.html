@@ -1039,7 +1039,13 @@
             return;
         }
 
-        const isPrivileged = currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor');
+        if(!currentUser) {
+            const sess = localStorage.getItem('sagamartha_user') || sessionStorage.getItem('sagamartha_user');
+            if(sess) currentUser = JSON.parse(sess);
+        }
+        const userRole = (currentUser && currentUser.role) ? currentUser.role.toLowerCase() : '';
+        const isPrivileged = userRole === 'admin' || userRole === 'supervisor';
+
         missing.forEach(u => {
             const item = document.createElement('div');
             item.className = 'flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-lg hover:border-primary/20 transition-all group';
@@ -1483,6 +1489,7 @@
             const res = await fetch('https://sagamartha.onrender.com/api/users');
             if(!res.ok) return;
             let data = await res.json();
+            window.allUsers = data; // Global cache
             
             // Apply search filter if any
             const searchVal = document.getElementById('user-filter-search')?.value.toLowerCase();
@@ -1498,31 +1505,41 @@
             if(!tbody) return;
             tbody.innerHTML = '';
             data.forEach(u => {
-                let roleColor = u.role === 'admin' ? 'bg-rose-50 text-rose-700 border-rose-100' : (u.role === 'supervisor' ? 'bg-cyan-50 text-cyan-700 border-cyan-100' : 'bg-slate-50 text-slate-700 border-slate-100');
-                let action = (currentUser && currentUser.role === 'admin' && u.username !== currentUser.username) 
-                    ? `<button onclick="deleteUser('${u.username}')" class="text-red-400 hover:text-red-600 p-1.5 rounded-lg transition-colors" title="Hapus Akun"><span class="material-symbols-outlined text-lg">person_remove</span></button>` 
-                    : '<span class="text-[10px] text-slate-300">Protected</span>';
-                
-                tr.innerHTML = `
-                    <td class="p-4 pl-8 text-xs font-mono text-slate-500">${u.username}</td>
-                    <td class="p-4 text-sm font-bold text-slate-800">${u.employee_name}</td>
-                    <td class="p-4">
-                        <span class="px-2 py-0.5 border ${roleColor} text-[10px] font-bold rounded-full uppercase">${u.role}</span>
-                    </td>
-                    <td class="p-4">
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined text-sm text-slate-300">account_tree</span>
-                            <span class="text-xs text-slate-600 font-medium">${u.supervisor_name || '<em class="text-slate-300">Top Level</em>'}</span>
-                        </div>
-                    </td>
-                    <td class="p-4 text-center">
-                        <div class="flex items-center justify-center gap-2">
-                            <button onclick="promptResetPassword('${u.username}')" class="text-primary hover:bg-primary/5 p-1.5 rounded-lg transition-colors" title="Reset Password"><span class="material-symbols-outlined text-lg">lock_reset</span></button>
-                            ${action}
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+                try {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 transition-colors group';
+                    
+                    const role = (u.role || '').toLowerCase();
+                    let roleColor = 'bg-slate-50 text-slate-700 border-slate-100';
+                    if(role === 'admin') roleColor = 'bg-rose-50 text-rose-700 border-rose-100';
+                    else if(role === 'supervisor') roleColor = 'bg-cyan-50 text-cyan-700 border-cyan-100';
+
+                    const currRole = (currentUser && currentUser.role) ? currentUser.role.toLowerCase() : '';
+                    let action = (currRole === 'admin' && u.username !== currentUser.username) 
+                        ? `<button onclick="deleteUser('${u.username}')" class="text-red-400 hover:text-red-600 p-1.5 rounded-lg transition-colors" title="Hapus Akun"><span class="material-symbols-outlined text-lg">person_remove</span></button>` 
+                        : '<span class="text-[10px] text-slate-300">Protected</span>';
+                    
+                    tr.innerHTML = `
+                        <td class="p-4 pl-8 text-xs font-mono text-slate-500">${u.username}</td>
+                        <td class="p-4 text-sm font-bold text-slate-800">${u.employee_name}</td>
+                        <td class="p-4">
+                            <span class="px-2 py-0.5 border ${roleColor} text-[10px] font-bold rounded-full uppercase">${u.role}</span>
+                        </td>
+                        <td class="p-4">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm text-slate-300">account_tree</span>
+                                <span class="text-xs text-slate-600 font-medium">${u.supervisor_name || '<em class="text-slate-300">Top Level</em>'}</span>
+                            </div>
+                        </td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <button onclick="promptResetPassword('${u.username}')" class="text-primary hover:bg-primary/5 p-1.5 rounded-lg transition-colors" title="Reset Password"><span class="material-symbols-outlined text-lg">lock_reset</span></button>
+                                ${action}
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                } catch(err) { console.error('Row render error:', err); }
             });
         } catch(e) { console.warn('Users error:', e); }
     }
