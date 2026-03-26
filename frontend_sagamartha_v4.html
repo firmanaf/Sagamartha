@@ -205,19 +205,17 @@
 </select>
 </div>
 </header>
-<!-- Mobile Attendance Status Card (Quick Access) -->
-<div id="dash-attendance-card" class="mb-6 bg-gradient-to-r from-primary to-primary-container p-5 rounded-xl shadow-md text-white">
-    <div class="flex items-center justify-between gap-4">
-        <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                <span class="material-symbols-outlined text-white text-2xl">event_available</span>
-            </div>
-            <div>
-                <h3 class="font-bold text-sm tracking-tight opacity-90">Kehadiran (Absensi)</h3>
-                <p id="dash-att-status" class="text-xs font-medium uppercase tracking-widest mt-0.5">Memuat status...</p>
-            </div>
-        </div>
-        <button onclick="switchView('view-kehadiran')" class="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/30 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all">Kelola</button>
+<!-- Ranking Check-In Card -->
+<div id="dash-ranking-card" class="mb-6 bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">emoji_events</span> Peringkat Check-In Tercepat Hari Ini
+        </h3>
+        <span class="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold uppercase tracking-wider">Top 5</span>
+    </div>
+    <div id="checkin-ranking-list" class="space-y-2">
+        <!-- Ranking items will be injected here -->
+        <p class="text-xs text-slate-400 text-center py-4 italic">Belum ada data check-in hari ini.</p>
     </div>
 </div>
 <!-- Analytics Charts Section -->
@@ -998,7 +996,7 @@
         const main = document.getElementById('app-main');
 
         // Hide all views
-        const views = ['view-login', 'view-dashboard', 'view-kinerja', 'view-lembur', 'view-kehadiran', 'view-akun', 'view-pengaturan'];
+        const views = ['view-login', 'view-dashboard', 'view-kinerja', 'view-lembur', 'view-kehadiran', 'view-akun', 'view-pengaturan', 'view-kalender', 'view-beban'];
         views.forEach(id => {
             const el = document.getElementById(id);
             if(el) { el.classList.remove('block', 'flex'); el.classList.add('hidden'); }
@@ -1472,6 +1470,7 @@
             renderAttendanceTable();
             syncAttendanceStatus();
             refreshAttendanceMap();
+            updateCheckInRanking();
         } catch(e) { console.warn('Gagal memuat kehadiran:', e); }
     }
 
@@ -1487,6 +1486,54 @@
             }
         } catch(e) { alert('Net error'); }
     };
+
+    function updateCheckInRanking() {
+        const rankingList = document.getElementById('checkin-ranking-list');
+        if(!rankingList) return;
+
+        const today = getLocalToday();
+        const todayAttendance = window.allAttendanceData
+            .filter(r => r.attendance_date === today && r.check_in_time)
+            .sort((a, b) => a.check_in_time.localeCompare(b.check_in_time))
+            .slice(0, 5);
+
+        if(todayAttendance.length === 0) {
+            rankingList.innerHTML = '<p class="text-xs text-slate-400 text-center py-4 italic">Belum ada data check-in hari ini.</p>';
+            return;
+        }
+
+        rankingList.innerHTML = '';
+        todayAttendance.forEach((r, idx) => {
+            const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '';
+            const item = document.createElement('div');
+            item.className = 'flex items-center justify-between p-2.5 bg-slate-50 border border-slate-100 rounded-lg group hover:border-emerald-200 transition-all';
+            item.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-7 h-7 flex items-center justify-center text-sm font-bold ${idx < 3 ? 'text-emerald-600' : 'text-slate-400'}">
+                        ${medal || (idx + 1)}
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-700">${r.employee_name}</p>
+                        <p class="text-[9px] text-slate-400 uppercase font-medium">Rank #${idx + 1}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-bold text-emerald-600">${r.check_in_time}</p>
+                    <p class="text-[9px] text-slate-400">Jam Masuk</p>
+                </div>
+            `;
+            rankingList.appendChild(item);
+        });
+    }
+
+    function getContrastColor(hex) {
+        if (!hex || hex.indexOf('#') !== 0) return 'white';
+        const r = parseInt(hex.substr(1, 2), 16);
+        const g = parseInt(hex.substr(3, 2), 16);
+        const b = parseInt(hex.substr(5, 2), 16);
+        const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+        return (yiq >= 128) ? '#1e293b' : 'white';
+    }
 
     function syncAttendanceStatus() {
         const today = getLocalToday();
@@ -1624,21 +1671,21 @@
 
         data.sort((a,b) => b.attendance_date.localeCompare(a.attendance_date));
         data.forEach(r => {
-            let dur = 'â€”';
+            let dur = '-';
             if(r.check_in_time && r.check_out_time) {
                 const [ih,im] = r.check_in_time.split(':').map(Number);
                 const [oh,om] = r.check_out_time.split(':').map(Number);
                 const mins = (oh*60+om) - (ih*60+im);
                 dur = `${Math.floor(mins/60)}j ${mins%60}m`;
             }
-            const locLink = r.check_in_lat ? `<a href="https://www.google.com/maps?q=${r.check_in_lat},${r.check_in_lng}" target="_blank" class="text-primary hover:underline text-[10px]">ðŸ“ Lihat</a>` : 'â€”';
+            const locLink = r.check_in_lat ? `<a href="https://www.google.com/maps?q=${r.check_in_lat},${r.check_in_lng}" target="_blank" class="text-primary hover:underline text-[10px] flex items-center justify-center gap-1"><span class="material-symbols-outlined text-[14px]">my_location</span> Lihat</a>` : '-';
             const statusColor = r.check_out_time ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200';
             const statusText = r.check_out_time ? 'Selesai' : 'Aktif';
             const isAdmin = currentUser && currentUser.role === 'admin';
-            const actionBtn = isAdmin ? `<button onclick="resetAttendance('${r.id}')" class="text-red-400 hover:text-red-600 p-1" title="Reset Absensi"><span class="material-symbols-outlined text-lg">history</span></button>` : 'â€”';
+            const actionBtn = isAdmin ? `<button onclick="resetAttendance('${r.id}')" class="text-red-400 hover:text-red-600 p-1" title="Reset Absensi"><span class="material-symbols-outlined text-lg">history</span></button>` : '-';
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50/80 transition-colors';
-            tr.innerHTML = `<td class="p-3 text-sm font-bold text-slate-800 pl-6">${r.employee_name}</td><td class="p-3 text-xs text-slate-600">${r.attendance_date}</td><td class="p-3 text-xs font-bold text-emerald-600">${r.check_in_time}</td><td class="p-3 text-xs font-bold ${r.check_out_time ? 'text-red-500' : 'text-slate-300'}">${r.check_out_time || 'â€”'}</td><td class="p-3 text-xs font-bold text-slate-800 text-right">${dur}</td><td class="p-3 text-center">${locLink}</td><td class="p-3 text-center"><span class="px-2 py-0.5 border ${statusColor} text-[10px] font-bold rounded-full uppercase">${statusText}</span></td><td class="p-3 text-center admin-action-col">${actionBtn}</td>`;
+            tr.innerHTML = `<td class="p-3 text-sm font-bold text-slate-800 pl-6">${r.employee_name}</td><td class="p-3 text-xs text-slate-600">${r.attendance_date}</td><td class="p-3 text-xs font-bold text-emerald-600">${r.check_in_time}</td><td class="p-3 text-xs font-bold ${r.check_out_time ? 'text-red-500' : 'text-slate-300'}">${r.check_out_time || '-'}</td><td class="p-3 text-xs font-bold text-slate-800 text-right">${dur}</td><td class="p-3 text-center">${locLink}</td><td class="p-3 text-center"><span class="px-2 py-0.5 border ${statusColor} text-[10px] font-bold rounded-full uppercase">${statusText}</span></td><td class="p-3 text-center admin-action-col">${actionBtn}</td>`;
             tbody.appendChild(tr);
         });
     };
@@ -1954,9 +2001,10 @@
                 const bar = document.createElement('div');
                 const color = getProjectColor(t.project_title);
                 
-                bar.className = 'task-bar text-white border-0 shadow-sm';
+                bar.className = 'task-bar border-0 shadow-sm';
                 bar.style.backgroundColor = color;
-                bar.textContent = `${t.employee_name.split(' ')[0]}: ${t.project_title || 'Agenda'}`;
+                bar.style.color = getContrastColor(color);
+                bar.textContent = t.project_title || 'Agenda';
                 bar.title = `Proyek: ${t.project_title}\nAgenda: ${t.target_description}\nSupervisor: ${t.supervisor_name || 'N/A'}`;
                 bar.onclick = (e) => {
                     e.stopPropagation();
