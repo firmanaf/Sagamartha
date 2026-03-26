@@ -942,6 +942,8 @@
             if(roleEls.length) roleEls[0].textContent = currentUser.role;
             if(initialEls.length) initialEls[0].textContent = currentUser.username.substring(0,2).toUpperCase();
             
+            switchView('view-dashboard');
+            
             fetchWorkload();
             init(); // Unified initialization
         } else {
