@@ -131,10 +131,14 @@
         .holiday-label { color: #ef4444; font-weight: 800; font-size: 9px; }
         .checking-icon { position: absolute; top: 4px; right: 4px; color: #3b82f6; font-size: 16px !important; }
         .dot-container { display: flex; gap: 2px; flex-wrap: wrap; margin-top: 2px; padding: 0 4px; }
-                .dot-check-item { display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 1px 4px; border-radius: 4px; transition: background 0.2s; }
-        .dot-check-item:hover { background: #f1f5f9; }
-        .dot-check { width: 8px; height: 8px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; }
         .dot-text { font-size: 9px; font-weight: 600; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+        
+        /* Sticky Table Headers [Revision 5.4] */
+        .table-responsive { max-height: 75vh; overflow-y: auto; position: relative; }
+        thead th { position: sticky; top: 0; z-index: 20; background: #f8fafc !important; box-shadow: 0 1px 0 #e2e8f0; }
+        #workload-matrix-table thead th.sticky-corner { position: sticky; left: 0; top: 0; z-index: 40; background: #f1f5f9 !important; }
+        #workload-matrix-table thead th:not(.sticky-corner) { z-index: 30; }
+        .sticky-left { position: sticky; left: 0; z-index: 10; background: white !important; }
         /* Workload Table Styles */
         .workload-cell-input { width: 100% !important; border: none !important; background: transparent !important; text-align: center; font-size: 12px; font-weight: bold; }
         .workload-cell-input:focus { background: #f1f5f9 !important; outline: none; }
@@ -410,11 +414,11 @@
     </header>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div class="data-table-container overflow-x-auto">
+        <div class="table-responsive overflow-x-auto">
             <table id="workload-matrix-table" class="w-full text-left border-collapse min-w-[1000px]">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-200">
-                        <th class="p-4 pl-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-slate-200 sticky left-0 bg-slate-50 z-10 w-64">Nama Karyawan</th>
+                        <th class="p-4 pl-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-r border-slate-200 sticky-left sticky-corner w-64">Nama Karyawan</th>
                         <th class="p-4 text-[10px] font-bold text-emerald-600 uppercase tracking-widest text-center w-24">SUM (Beban)</th>
                         <th class="p-4 text-[10px] font-bold text-cyan-600 uppercase tracking-widest text-center w-24 border-r border-slate-200">COUNT (Job)</th>
                         <!-- Project Columns will be injected here -->
@@ -485,7 +489,7 @@
 <button onclick="fetchPerformanceData()" class="p-2 text-slate-400 hover:text-primary transition-colors tooltip" title="Sinkronisasi Data"><span class="material-symbols-outlined">sync</span></button>
 </div>
 </div>
-<div class="data-table-container overflow-x-auto">
+<div class="table-responsive overflow-x-auto">
 <table class="w-full text-left border-collapse min-w-[1300px]">
 <thead>
 <tr class="bg-slate-50 border-b border-slate-200">
@@ -582,7 +586,7 @@
 <span class="text-sm font-bold text-primary">Riwayat Pengajuan Lembur</span>
 <button onclick="exportOvertimeCSV()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Download CSV"><span class="material-symbols-outlined">download</span></button>
 </div>
-        <div class="overflow-x-auto">
+        <div class="table-responsive overflow-x-auto">
             <table class="w-full text-left border-collapse min-w-[1000px]">
                 <thead>
                     <tr class="bg-slate-50 border-b border-slate-200">
@@ -668,7 +672,7 @@
         <button onclick="exportAttendanceCSV()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Download CSV"><span class="material-symbols-outlined">download</span></button>
     </div>
 </div>
-<div class="overflow-x-auto">
+<div class="table-responsive overflow-x-auto">
     <table class="w-full text-left border-collapse min-w-[900px]">
         <thead>
             <tr class="bg-slate-50 border-b border-slate-200">
@@ -707,7 +711,7 @@
         <button onclick="fetchUsers()" class="p-2 text-slate-400 hover:text-primary transition-colors" title="Refresh"><span class="material-symbols-outlined">sync</span></button>
     </div>
 </div>
-<div class="overflow-x-auto">
+<div class="table-responsive overflow-x-auto">
     <table class="w-full text-left border-collapse min-w-[850px]">
         <thead>
             <tr class="bg-slate-50 border-b border-slate-200">
@@ -2678,7 +2682,7 @@
             });
 
             let rowHtml = `
-                <td class="p-4 pl-8 border-r border-slate-200 sticky left-0 bg-white z-10 group flex items-center gap-3">
+                <td class="p-4 pl-8 border-r border-slate-200 sticky-left group flex items-center gap-3">
                     <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">${u.employee_name.substring(0,2).toUpperCase()}</div>
                     <div>
                         <p class="text-sm font-bold text-slate-800 leading-tight">${u.employee_name}</p>
