@@ -867,7 +867,7 @@
     const SUPERVISOR_COLORS = {
         "Angga Anugerah Ardana, S.T.": "#0b5d7a",
         "Annisa Dira Hariyanto, S.T., M.P.W.K.": "#9d174d",
-        "Andini Putri Salsabillah, S.P.W.K.": "#b45309",
+        "Andini Putri Salsabillah, S.P.W.K.": "#a88a00",
         "Dimas Tri Rendra Graha, S.T., M. Ars.": "#065f46"
     };
 
@@ -1921,7 +1921,10 @@
         const btn = document.getElementById('btn-submit-ot');
         btn.textContent = 'Mengirim...';
         const s = document.getElementById('ot-start').value, e = document.getElementById('ot-end').value;
-        const dur = Math.round(( (parseInt(e.split(':')[0]) + parseInt(e.split(':')[1])/60) - (parseInt(s.split(':')[0]) + parseInt(s.split(':')[1])/60) ) * 10) / 10;
+        const [sh, sm] = s.split(':').map(Number), [eh, em] = e.split(':').map(Number);
+        let dur = (eh + em/60) - (sh + sm/60);
+        if(dur < 0) dur += 24; // Handle overnight shifts
+        dur = Math.round(dur * 10) / 10;
         let emp = currentUser.employee_name;
         if(currentUser.role !== 'karyawan') { const sel = document.getElementById('ot-employee').value; if(sel) emp = sel; }
         const payload = { id: 'OT-'+Math.floor(Math.random()*100000), employee_name: emp, overtime_date: document.getElementById('ot-date').value, start_time: s, end_time: e, duration_hours: dur > 0 ? dur : 0, reason: document.getElementById('ot-reason').value, manager_approval: 'pending', comments: '' };
