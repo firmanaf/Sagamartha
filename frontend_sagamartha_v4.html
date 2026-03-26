@@ -90,13 +90,38 @@
         ::-webkit-scrollbar-thumb:hover { background: #00445b; }
         .data-table-container { scrollbar-gutter: stable; }
         /* Calendar Styles */
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid #e2e8f0; border-left: 1px solid #e2e8f0; }
-        .calendar-day { min-height: 120px; background: white; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 0.5rem; transition: background 0.2s; }
+        .calendar-grid { 
+            display: grid; 
+            grid-template-columns: repeat(7, 1fr); 
+            border-top: 1px solid #e2e8f0; 
+            border-left: 1px solid #e2e8f0; 
+            table-layout: fixed; 
+            width: 100%;
+        }
+        .calendar-day { 
+            min-height: 120px; 
+            background: white; 
+            border-right: 1px solid #e2e8f0; 
+            border-bottom: 1px solid #e2e8f0; 
+            padding: 0.5rem; 
+            transition: background 0.2s; 
+            overflow: hidden; /* Prevent cell expansion */
+        }
         .calendar-day:hover { background: #f8fafc; }
         .calendar-day.not-current { background: #f1f5f9; color: #94a3b8; }
         .calendar-day.today { background: #f0f9ff; }
         .calendar-day.today .day-num { background: #00445b; color: white; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 9999px; }
-        .task-bar { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); }
+        .task-bar { 
+            font-size: 10px; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            margin-bottom: 2px; 
+            white-space: normal; /* Allow wrap */
+            word-wrap: break-word; /* Force break long words */
+            cursor: pointer; 
+            border: 1px solid rgba(0,0,0,0.1); 
+            line-height: 1.2;
+        }
         .task-bar.multi-day { position: relative; z-index: 5; margin-left: -0.5rem; margin-right: -0.5rem; border-radius: 0; padding-left: 0.5rem; }
         .task-bar.multi-day.start { margin-left: 0; border-top-left-radius: 4px; border-bottom-left-radius: 4px; padding-left: 0.75rem; }
         .task-bar.multi-day.end { border-top-right-radius: 4px; border-bottom-right-radius: 4px; margin-right: 0; }
@@ -261,8 +286,34 @@
         <span class="text-[10px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded font-bold uppercase tracking-wider">Top 5</span>
     </div>
     <div id="checkin-ranking-list" class="space-y-2">
-        <!-- Ranking items will be injected here -->
+        <!-- Ranking items -->
         <p class="text-xs text-slate-400 text-center py-4 italic">Belum ada data check-in hari ini.</p>
+    </div>
+</div>
+
+<!-- Workload Ranking Card [NEW Revision 4.4] -->
+<div id="dash-workload-ranking" class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald-600">bar_chart</span> Peringkat Total Beban Kerja
+            </h3>
+            <span class="text-[9px] bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider">Top 5</span>
+        </div>
+        <div id="sum-beban-list" class="space-y-2">
+            <p class="text-xs text-slate-400 text-center py-4 italic">Memuat data beban...</p>
+        </div>
+    </div>
+    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-cyan-600">account_tree</span> Peringkat Jumlah Proyek
+            </h3>
+            <span class="text-[9px] bg-cyan-50 text-cyan-600 px-2 py-0.5 rounded font-bold uppercase tracking-wider">Top 5</span>
+        </div>
+        <div id="count-job-list" class="space-y-2">
+            <p class="text-xs text-slate-400 text-center py-4 italic">Memuat data beban...</p>
+        </div>
     </div>
 </div>
 <!-- Analytics Charts Section -->
@@ -299,7 +350,7 @@
         </div>
         <div class="flex items-center gap-2">
                     <!-- Target Button Kept Unused on Calendar View -->
-                    <button id="btn-add-agenda" onclick="openAgendaModal()" class="btn-secondary text-xs py-2 px-4 rounded-lg flex items-center gap-2">
+                    <button id="btn-add-agenda" onclick="openAgendaModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs py-2 px-4 rounded-lg flex items-center gap-2 transition-all shadow-md shadow-indigo-100">
                         <span class="material-symbols-outlined text-sm">calendar_add_on</span> Tambah Agenda
                     </button>
                     <button id="btn-add-checking" onclick="openCheckingModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs py-2 px-4 rounded-lg flex items-center gap-2 transition-all">
@@ -1190,6 +1241,7 @@
 
     window.saveChecking = async function() {
         const payload = {
+            id: 'CHK-' + Math.floor(Math.random() * 100000), // Fixed: Missing ID for backend Pydantic model
             project_title: document.getElementById('checking-project').value,
             check_date: document.getElementById('checking-date').value,
             supervisor_name: document.getElementById('checking-supervisor').value,
@@ -2418,9 +2470,68 @@
             if(res.ok) {
                 window.allWorkloadData = await res.json();
                 renderWorkload();
+                renderDashboardWorkloadRankings(); // [NEW Revision 4.4]
             }
         } catch(e) { console.warn('Workload fetch error:', e); }
     };
+
+    function renderDashboardWorkloadRankings() {
+        const sumContainer = document.getElementById('sum-beban-list');
+        const countContainer = document.getElementById('count-job-list');
+        if(!sumContainer || !countContainer || !window.allWorkloadData || !window.allWorkloadData.matrix) return;
+        
+        const projects = window.allWorkloadData.projects || [];
+        const matrix = window.allWorkloadData.matrix || {};
+        // Ensure allUsers is available
+        if(!allUsers || allUsers.length === 0) return;
+
+        const stats = allUsers.filter(u => u.role?.toLowerCase() !== 'admin').map(u => {
+            const userMatrix = matrix[u.username] || {};
+            let sumBeban = 0;
+            let countJob = 0;
+            projects.forEach(p => {
+                const val = parseFloat(userMatrix[p]) || 0;
+                if(val > 0) { sumBeban += val; countJob++; }
+            });
+            return { name: u.employee_name, sumBeban, countJob };
+        });
+
+        // Top 5 by Sum Beban
+        const topSum = [...stats].sort((a,b) => b.sumBeban - a.sumBeban).slice(0, 5);
+        // Top 5 by Count Job
+        const topCount = [...stats].sort((a,b) => b.countJob - a.countJob).slice(0, 5);
+
+        const renderList = (data, container, valueKey) => {
+            container.innerHTML = '';
+            if(data.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4 italic">Belum ada data.</p>';
+                return;
+            }
+            data.forEach((d, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-all';
+                let badgeHtml = `<span class="w-5 h-5 flex items-center justify-center text-[10px] font-bold rounded-full bg-slate-100 text-slate-500">${idx+1}</span>`;
+                if(idx === 0) badgeHtml = '<span class="text-lg">🥇</span>';
+                else if(idx === 1) badgeHtml = '<span class="text-lg">🥈</span>';
+                else if(idx === 2) badgeHtml = '<span class="text-lg">🥉</span>';
+                
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        ${badgeHtml}
+                        <span class="text-xs font-bold text-slate-700">${d.name}</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-primary font-bold text-xs">
+                        <span>${d[valueKey]}</span>
+                        <span class="text-[10px] opacity-50">${valueKey === 'sumBeban' ? 'Poin' : 'Proyek'}</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        };
+
+        renderList(topSum, sumContainer, 'sumBeban');
+        renderList(topCount, countContainer, 'countJob');
+    }
 
     window.renderWorkload = function() {
         const table = document.getElementById('workload-matrix-table');
