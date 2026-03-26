@@ -46,6 +46,7 @@ class PerformanceRecord(BaseModel):
     daily_target: float
     daily_performance: float
     achievement_percent: float
+    supervisor_name: Optional[str] = ""
     status: str = "pending"
 
 class AttendanceRecord(BaseModel):
