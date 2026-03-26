@@ -520,9 +520,12 @@
 <h1 class="text-3xl font-headline font-bold text-primary tracking-tight">Manajemen Lembur</h1>
 <p class="text-slate-500 font-medium text-sm">Form pengajuan lembur dan log overtime karyawan.</p>
 </div>
-<button onclick="document.getElementById('lembur-form').classList.toggle('hidden')" class="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2">
-<span class="material-symbols-outlined text-lg">add</span> Ajukan Lembur
-</button>
+    <div class="flex gap-2">
+        <button onclick="fetchOvertime(); alert('Data lembur diperbarui.')" class="p-2 text-slate-400 hover:text-primary transition-colors tooltip" title="Refresh Data"><span class="material-symbols-outlined">refresh</span></button>
+        <button onclick="document.getElementById('lembur-form').classList.toggle('hidden')" class="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+            <span class="material-symbols-outlined text-lg">add</span> Ajukan Lembur
+        </button>
+    </div>
 </header>
 
 <!-- Form Pengajuan Lembur -->
