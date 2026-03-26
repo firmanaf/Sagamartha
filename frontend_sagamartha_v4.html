@@ -298,9 +298,7 @@
         </div>
         </div>
         <div class="flex items-center gap-2">
-                     <button onclick="openTargetModal()" class="btn-primary text-xs py-2 px-4 rounded-lg flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm">add_task</span> Isi Target Baru
-                    </button>
+                    <!-- Target Button Kept Unused on Calendar View -->
                     <button id="btn-add-agenda" onclick="openAgendaModal()" class="btn-secondary text-xs py-2 px-4 rounded-lg flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm">calendar_add_on</span> Tambah Agenda
                     </button>
@@ -1018,7 +1016,7 @@
         document.getElementById('btn-submit-target').textContent = 'Simpan Data';
         
         await populateEmployeeDropdowns();
-        await populateProjectDropdown();
+        await populateProjectDropdowns();
         populateSupervisorDropdowns(); // Populate supervisor dropdown
 
         const role = getNormalizedRole();
@@ -1055,7 +1053,7 @@
         document.getElementById('btn-submit-target').textContent = 'Update Perubahan';
         
         await populateEmployeeDropdowns();
-        await populateProjectDropdown();
+        await populateProjectDropdowns();
         populateSupervisorDropdowns(); // Populate supervisor dropdown
         
         const empSelect = document.getElementById('input-employee');
@@ -2108,6 +2106,9 @@
             if(!res.ok) return;
             let data = await res.json();
             allUsers = data; // Global cache
+            if (window.allWorkloadData && window.allWorkloadData.projects && window.allWorkloadData.projects.length > 0) {
+                renderWorkload(); // Fix async race condition for workload view
+            }
             
             // Apply search filter if any
             const searchVal = document.getElementById('user-filter-search')?.value.toLowerCase();
@@ -2325,8 +2326,8 @@
                     ${holidayHtml}
                 </div>
                 ${checkingHtml}
-                <div class="dot-container"></div>
-                <div class="task-container space-y-1"></div>
+                <div class="task-container space-y-1 mb-1"></div>
+                <div class="dot-container flex flex-wrap gap-1 px-1 mt-1"></div>
             `;
             
             div.onclick = (e) => {
@@ -2376,19 +2377,7 @@
                 dotsArea.appendChild(dot);
             });
 
-            // 3. Render Individual Targets (Legacy/Individual view)
-            const tasks = (allPerformanceData || []).filter(d => d.work_date === dateStr);
-            tasks.forEach(t => {
-                const bar = document.createElement('div');
-                bar.className = 'task-bar border border-slate-200 shadow-sm opacity-80';
-                bar.style.backgroundColor = '#f8fafc';
-                bar.style.color = '#334155';
-                bar.style.fontSize = '9px';
-                bar.innerHTML = `<span class="material-symbols-outlined text-[10px] scale-75">person</span> ${t.employee_name.split(' ')[0]}: ${t.project_title}`;
-                bar.title = `Pekerjaan Individu: ${t.employee_name}\n${t.target_description}`;
-                bar.onclick = (e) => { e.stopPropagation(); openEditPerformanceModal(t.id); };
-                taskContainer.appendChild(bar);
-            });
+            // Removed Individual Targets from Calendar to strictly show Agendas and Checking dots.
 
             grid.appendChild(div);
         }
