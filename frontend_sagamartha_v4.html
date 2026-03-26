@@ -73,8 +73,11 @@
                     <textarea id="checking-desc" rows="3" class="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-xs focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Detail hasil pengecekan..."></textarea>
                 </div>
                 <div class="flex gap-3 mt-2">
+                    <button id="btn-delete-checking" onclick="deleteCheckingFromModal()" class="hidden px-4 py-2 border border-red-200 text-red-500 rounded-md text-sm font-medium hover:bg-red-50 transition-colors flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">delete</span> Hapus
+                    </button>
                     <button onclick="closeCheckingModal()" class="flex-1 py-2 border border-gray-200 text-gray-600 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors">Batal</button>
-                    <button onclick="saveChecking()" class="flex-1 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">Simpan Pengecekan</button>
+                    <button onclick="saveChecking()" class="flex-2 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">Simpan Pengecekan</button>
                 </div>
             </div>
         </div>
@@ -128,7 +131,10 @@
         .holiday-label { color: #ef4444; font-weight: 800; font-size: 9px; }
         .checking-icon { position: absolute; top: 4px; right: 4px; color: #3b82f6; font-size: 16px !important; }
         .dot-container { display: flex; gap: 2px; flex-wrap: wrap; margin-top: 2px; padding: 0 4px; }
-        .dot-check { width: 8px; height: 8px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.1); cursor: help; }
+                .dot-check-item { display: flex; align-items: center; gap: 4px; cursor: pointer; padding: 1px 4px; border-radius: 4px; transition: background 0.2s; }
+        .dot-check-item:hover { background: #f1f5f9; }
+        .dot-check { width: 8px; height: 8px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; }
+        .dot-text { font-size: 9px; font-weight: 600; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
         /* Workload Table Styles */
         .workload-cell-input { width: 100% !important; border: none !important; background: transparent !important; text-align: center; font-size: 12px; font-weight: bold; }
         .workload-cell-input:focus { background: #f1f5f9 !important; outline: none; }
@@ -1243,6 +1249,7 @@
         const idInput = document.getElementById('checking-id');
         const title = document.querySelector('#modal-checking h3');
         const saveBtn = document.querySelector('#modal-checking button[onclick="saveChecking()"]');
+        const deleteBtn = document.getElementById('btn-delete-checking');
         
         if(id) {
             const record = (allCheckings || []).find(r => r.id === id);
@@ -1254,6 +1261,7 @@
                 document.getElementById('checking-desc').value = record.description;
                 title.innerHTML = '<span class="material-symbols-outlined">edit_note</span> Edit Pengecekan';
                 saveBtn.textContent = 'Simpan Perubahan';
+                if(deleteBtn) deleteBtn.classList.remove('hidden');
             }
         } else {
             idInput.value = '';
@@ -1263,7 +1271,21 @@
             document.getElementById('checking-desc').value = '';
             title.innerHTML = '<span class="material-symbols-outlined">fact_check</span> Tambah Pengecekan Harian';
             saveBtn.textContent = 'Simpan Pengecekan';
+            if(deleteBtn) deleteBtn.classList.add('hidden');
         }
+    };
+
+    window.deleteCheckingFromModal = async function() {
+        const id = document.getElementById('checking-id').value;
+        if(!id) return;
+        if(!confirm('Hapus data pengecekan ini?')) return;
+        try {
+            const res = await fetch(`${API_BASE}/api/checkings/${id}`, { method: 'DELETE' });
+            if(res.ok) {
+                closeCheckingModal();
+                fetchCheckings();
+            }
+        } catch(e) { console.error(e); }
     };
 
     window.closeCheckingModal = function() {
@@ -2490,16 +2512,27 @@
             // 2. Render Checking Dots [NEW Revision 4]
             const dailyCheckings = (allCheckings || []).filter(c => c.check_date === dateStr);
             (dailyCheckings || []).forEach(chk => {
+                const item = document.createElement('div');
+                item.className = 'dot-check-item';
+                
                 const dot = document.createElement('div');
                 const color = SUPERVISOR_COLORS[chk.supervisor_name] || '#64748b';
                 dot.className = 'dot-check';
                 dot.style.backgroundColor = color;
-                dot.title = `${chk.project_title}: ${chk.description} (${chk.supervisor_name})`;
-                dot.onclick = (e) => {
+                
+                const text = document.createElement('span');
+                text.className = 'dot-text';
+                text.textContent = chk.project_title + ' - ' + chk.description;
+                text.title = text.textContent;
+
+                item.appendChild(dot);
+                item.appendChild(text);
+
+                item.onclick = (e) => {
                     e.stopPropagation();
                     openCheckingModal(chk.id);
                 };
-                dotsArea.appendChild(dot);
+                dotsArea.appendChild(item);
             });
 
             // Removed Individual Targets from Calendar to strictly show Agendas and Checking dots.
