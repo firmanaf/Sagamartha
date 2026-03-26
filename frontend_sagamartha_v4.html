@@ -1833,13 +1833,16 @@
         });
     }
 
-    // ========== ADVANCED DASHBOARD ANALYTICS [Revision 6.2] ==========
+    // ========== ADVANCED DASHBOARD ANALYTICS [Revision 6.3 - Fixed Workload & Monthly Filtering] ==========
     function updateAdvancedDashboard() {
         if (!allUsers || allUsers.length === 0) return;
 
-        // 1. Calculate General Project Completion Score %
-        const totalAchievement = allPerformanceData.length > 0 
-            ? allPerformanceData.reduce((acc, curr) => acc + (curr.achievement_percent || 0), 0) / allPerformanceData.length 
+        const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
+
+        // 1. Calculate General Project Completion Score % (This Month)
+        const monthPerformance = allPerformanceData.filter(d => d.work_date && d.work_date.startsWith(currentMonth));
+        const totalAchievement = monthPerformance.length > 0 
+            ? monthPerformance.reduce((acc, curr) => acc + (curr.achievement_percent || 0), 0) / monthPerformance.length 
             : 0;
         
         const scoreEl = document.getElementById('dash-completion-score');
@@ -1848,21 +1851,35 @@
         if (barEl) barEl.style.width = `${totalAchievement}%`;
 
         // 2. Prepare Data & Normalization for Rankings
-        // We need to normalize Workload and Target Count across all users
-        const rawStats = allUsers.map(user => {
-            const logs = allPerformanceData.filter(d => d.employee_name === user.employee_name);
-            const workload = (window.allWorkloadData && window.allWorkloadData.matrix) 
-                ? (window.allWorkloadData.matrix[user.employee_name] || {}).sum_beban || 0 
+        const rawStats = allUsers.filter(u => u.role !== 'admin').map(user => {
+            const monthLogs = allPerformanceData.filter(d => d.employee_name === user.employee_name && d.work_date && d.work_date.startsWith(currentMonth));
+            
+            // Calculate Sum Beban correctly from matrix
+            let sumBeban = 0;
+            if (window.allWorkloadData && window.allWorkloadData.matrix && window.allWorkloadData.projects) {
+                const userMatrix = window.allWorkloadData.matrix[user.username] || {};
+                window.allWorkloadData.projects.forEach(p => {
+                    sumBeban += parseFloat(userMatrix[p]) || 0;
+                });
+            }
+
+            const perfScore = monthLogs.length > 0 
+                ? monthLogs.reduce((acc, curr) => acc + (curr.achievement_percent || 0), 0) / monthLogs.length 
                 : 0;
+            
+            const attScore = calculateAttendanceDiligenceScore(user.employee_name, currentMonth);
+
             return {
                 name: user.employee_name,
-                perf: calculateAchievementScoreForUser(user.employee_name),
-                att: calculateAttendanceDiligenceScore(user.employee_name),
-                workload: workload,
-                targetCount: logs.length
+                username: user.username,
+                perf: perfScore,
+                att: attScore,
+                workload: sumBeban,
+                targetCount: monthLogs.length
             };
         });
 
+        // Normalization
         const maxWorkload = Math.max(1, ...rawStats.map(s => s.workload));
         const maxTargets = Math.max(1, ...rawStats.map(s => s.targetCount));
 
@@ -1931,24 +1948,26 @@
     }
 
     function calculateAchievementScoreForUser(name) {
-        const logs = allPerformanceData.filter(d => d.employee_name === name);
+        const currentMonth = new Date().toISOString().substring(0, 7);
+        const logs = allPerformanceData.filter(d => d.employee_name === name && d.work_date && d.work_date.startsWith(currentMonth));
         if (logs.length === 0) return 0;
         return logs.reduce((acc, curr) => acc + (curr.achievement_percent || 0), 0) / logs.length;
     }
 
-    function calculateAttendanceDiligenceScore(name) {
-        const logs = allAttendance.filter(d => d.employee_name === name);
+    function calculateAttendanceDiligenceScore(name, month) {
+        let logs = allAttendance.filter(d => d.employee_name === name);
+        if (month) {
+            logs = logs.filter(l => l.attendance_date && l.attendance_date.startsWith(month));
+        }
         if (logs.length === 0) return 0;
         let totalPoints = 0;
         logs.forEach(log => {
             let pts = 100;
-            // Target In 09:00
             if (log.check_in_time) {
                 const [h, m] = log.check_in_time.split(':').map(Number);
                 const lateMins = Math.max(0, (h * 60 + m) - (9 * 60));
                 pts -= (lateMins * 2); 
             }
-            // Target Out 16:00
             if (log.check_out_time) {
                 const [h, m] = log.check_out_time.split(':').map(Number);
                 const earlyMins = Math.max(0, (16 * 60) - (h * 60 + m));
