@@ -29,6 +29,7 @@ RECORDS_FILE = os.path.join(DATA_DIR, "enterprise_records.json")
 ATTENDANCE_FILE = os.path.join(DATA_DIR, "enterprise_attendance.json")
 OVERTIME_FILE = os.path.join(DATA_DIR, "enterprise_overtime.json")
 WORKLOAD_FILE = os.path.join(DATA_DIR, "project_workload_pwkv4.json")
+AGENDAS_FILE = os.path.join(DATA_DIR, "enterprise_agendas.json")
 
 class UserBase(BaseModel):
     username: str
@@ -48,6 +49,15 @@ class PerformanceRecord(BaseModel):
     achievement_percent: float
     supervisor_name: Optional[str] = ""
     status: str = "pending"
+
+class AgendaRecord(BaseModel):
+    id: str
+    project_title: str
+    description: str
+    start_date: str
+    end_date: str
+    supervisor_name: str
+    involved_employees: List[str] # Usernames
 
 class AttendanceRecord(BaseModel):
     id: str
@@ -333,6 +343,40 @@ def save_workload(data: WorkloadData):
     with open(WORKLOAD_FILE, "w", encoding="utf-8") as f:
         json.dump(data.dict(), f, indent=2)
     return {"message": "Workload data saved successfully."}
+
+@app.get("/api/agendas", response_model=List[AgendaRecord])
+def get_agendas():
+    return load_json(AGENDAS_FILE, [])
+
+@app.post("/api/agendas", status_code=status.HTTP_201_CREATED)
+def create_agenda(agenda: AgendaRecord):
+    agendas = load_json(AGENDAS_FILE, [])
+    agendas.append(agenda.dict())
+    with open(AGENDAS_FILE, "w", encoding="utf-8") as f:
+        json.dump(agendas, f, indent=2)
+    return {"message": "Agenda created successfully."}
+
+@app.put("/api/agendas/{agenda_id}")
+def update_agenda(agenda_id: str, agenda: AgendaRecord):
+    agendas = load_json(AGENDAS_FILE, [])
+    for i, a in enumerate(agendas):
+        if a["id"] == agenda_id:
+            agendas[i] = agenda.dict()
+            with open(AGENDAS_FILE, "w", encoding="utf-8") as f:
+                json.dump(agendas, f, indent=2)
+            return {"message": "Agenda updated successfully."}
+    raise HTTPException(status_code=404, detail="Agenda not found.")
+
+@app.delete("/api/agendas/{agenda_id}")
+def delete_agenda(agenda_id: str):
+    agendas = load_json(AGENDAS_FILE, [])
+    initial_count = len(agendas)
+    agendas = [a for a in agendas if a["id"] != agenda_id]
+    if len(agendas) == initial_count:
+        raise HTTPException(status_code=404, detail="Agenda not found.")
+    with open(AGENDAS_FILE, "w", encoding="utf-8") as f:
+        json.dump(agendas, f, indent=2)
+    return {"message": "Agenda deleted."}
 
 if __name__ == "__main__":
     import uvicorn
