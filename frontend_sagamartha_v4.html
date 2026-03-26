@@ -814,6 +814,9 @@
 
     async function populateProjectDropdowns() {
         try {
+            if(!allUsers || allUsers.length === 0) {
+                await fetchUsers();
+            }
             if(!window.allWorkloadData || !window.allWorkloadData.projects) {
                 await fetchWorkload();
             }
@@ -832,6 +835,24 @@
                 if(currentVal) el.value = currentVal;
             });
         } catch(e) { console.error('Populate projects error:', e); }
+    }
+
+    function populateSupervisorDropdowns() {
+        if(!allUsers || allUsers.length === 0) return;
+        const supervisors = allUsers.filter(u => u.role === 'supervisor' || u.role === 'admin');
+        const selects = ['target-supervisor', 'agenda-supervisor', 'checking-supervisor'];
+        selects.forEach(id => {
+            const el = document.getElementById(id);
+            if(!id || !el) return;
+            const currentVal = el.value;
+            el.innerHTML = '<option value="">Pilih Supervisor</option>';
+            supervisors.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = opt.textContent = s.employee_name;
+                el.appendChild(opt);
+            });
+            if(currentVal) el.value = currentVal;
+        });
     }
 
     const getNormalizedRole = () => {
@@ -1042,7 +1063,7 @@
     }
     
     window.openEditPerformanceModal = async function(id) {
-        const item = (window.allPerformanceData || []).find(p => p.id === id);
+        const item = (allPerformanceData || []).find(p => p.id === id);
         if(!item) return;
         
         editPerformanceId = id;
@@ -2416,6 +2437,7 @@
 
         const projects = window.allWorkloadData.projects || [];
         const matrix = window.allWorkloadData.matrix || {};
+        const employees = (allUsers || []).filter(u => u.role?.toLowerCase() !== 'admin');
 
         const thead = table.querySelector('thead tr');
         while(thead.children.length > 3) thead.removeChild(thead.lastChild);
@@ -2433,11 +2455,10 @@
         });
 
         tbody.innerHTML = '';
-        if(!window.allUsers || window.allUsers.length === 0) {
+        if(!allUsers || allUsers.length === 0) {
             tbody.innerHTML = '<tr><td colspan="100" class="p-12 text-center">Memuat daftar karyawan...</td></tr>';
             return;
         }
-        const employees = window.allUsers.filter(u => u.role?.toLowerCase() !== 'admin');
         employees.forEach(u => {
             const tr = document.createElement('tr');
             tr.className = 'hover:bg-slate-50 transition-colors';
@@ -2519,7 +2540,7 @@
     window.downloadWorkloadCSV = function() {
         const projects = window.allWorkloadData.projects || [];
         const matrix = window.allWorkloadData.matrix || {};
-        const employees = (window.allUsers || []).filter(u => u.role?.toLowerCase() !== 'admin');
+        const employees = (allUsers || []).filter(u => u.role?.toLowerCase() !== 'admin');
         
         if(projects.length === 0) return alert('Tidak ada data proyek.');
 
