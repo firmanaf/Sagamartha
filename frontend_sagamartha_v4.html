@@ -388,6 +388,10 @@
             <p class="text-slate-500 font-medium text-sm">Distribusi beban kerja karyawan per proyek (Khusus Admin/SPV).</p>
         </div>
         <div class="flex gap-2">
+            <div class="flex items-center gap-2 bg-white px-3 py-1.5 border border-slate-200 rounded-lg shadow-sm">
+                <label class="text-[10px] font-bold text-slate-400 uppercase">Bulan:</label>
+                <input type="month" id="workload-month-picker" onchange="fetchWorkload()" class="border-none bg-transparent text-sm font-bold text-primary focus:ring-0 cursor-pointer">
+            </div>
             <button onclick="addNewProject()" class="px-4 py-2 bg-white border border-slate-200 text-primary font-bold rounded-lg shadow-sm hover:bg-slate-50 transition-all text-sm flex items-center gap-2">
                 <span class="material-symbols-outlined text-lg">add_task</span> Tambah Proyek
             </button>
@@ -1223,54 +1227,96 @@
         } catch(e) { console.warn('Checkings error:', e); }
     }
 
-    window.openCheckingModal = function() {
+    window.openCheckingModal = async function(id = null) {
         const role = getNormalizedRole();
         if(role !== 'admin' && role !== 'supervisor') return alert('Akses ditolak. Fitur ini khusus Supervisor/Admin.');
         
         document.getElementById('checking-date').value = getLocalToday();
-        document.getElementById('checking-project').value = '';
-        document.getElementById('checking-supervisor').value = currentUser ? currentUser.employee_name : '';
-        document.getElementById('checking-desc').value = '';
-        
+
         document.getElementById('modal-checking').classList.remove('hidden');
-    }
+        await populateProjectDropdowns(); // Ensure dropdowns are populated
+        populateSupervisorDropdowns(); // Ensure dropdowns are populated
+        
+        const idInput = document.getElementById('checking-id');
+        const title = document.querySelector('#modal-checking h3');
+        const saveBtn = document.querySelector('#modal-checking button[onclick="saveChecking()"]');
+        
+        if(id) {
+            const record = (allCheckings || []).find(r => r.id === id);
+            if(record) {
+                idInput.value = record.id;
+                document.getElementById('checking-project').value = record.project_title;
+                document.getElementById('checking-date').value = record.check_date;
+                document.getElementById('checking-supervisor').value = record.supervisor_name;
+                document.getElementById('checking-desc').value = record.description;
+                title.innerHTML = '<span class="material-symbols-outlined">edit_note</span> Edit Pengecekan';
+                saveBtn.textContent = 'Simpan Perubahan';
+            }
+        } else {
+            idInput.value = '';
+            document.getElementById('checking-project').value = '';
+            document.getElementById('checking-date').value = getLocalToday();
+            document.getElementById('checking-supervisor').value = currentUser ? currentUser.employee_name : ''; // Default for new entry
+            document.getElementById('checking-desc').value = '';
+            title.innerHTML = '<span class="material-symbols-outlined">fact_check</span> Tambah Pengecekan Harian';
+            saveBtn.textContent = 'Simpan Pengecekan';
+        }
+    };
 
     window.closeCheckingModal = function() {
         document.getElementById('modal-checking').classList.add('hidden');
-    }
+    };
 
     window.saveChecking = async function() {
+        const idInput = document.getElementById('checking-id');
+        const isEdit = !!idInput.value;
+        const btn = document.querySelector('#modal-checking button[onclick="saveChecking()"]');
+        const oldText = btn.textContent;
+        btn.textContent = 'Menyimpan...';
+
         const payload = {
-            id: 'CHK-' + Math.floor(Math.random() * 100000), // Fixed: Missing ID for backend Pydantic model
+            id: isEdit ? idInput.value : 'CHK-' + Math.floor(Math.random() * 100000),
             project_title: document.getElementById('checking-project').value,
             check_date: document.getElementById('checking-date').value,
             supervisor_name: document.getElementById('checking-supervisor').value,
             description: document.getElementById('checking-desc').value
         };
 
-        if(!payload.project_title || !payload.check_date || !payload.supervisor_name || !payload.description) {
-            return alert('Harap isi semua kolom pengecekan dengan lengkap.');
+        if(!payload.project_title || !payload.check_date || !payload.supervisor_name) {
+            alert('Harap isi data dengan lengkap!');
+            btn.textContent = oldText;
+            return;
         }
 
-        const btn = document.querySelector('#modal-checking button:last-child');
-        const oldText = btn.textContent;
-        btn.textContent = 'Menyimpan...';
-
         try {
-            const res = await fetch(`${API_BASE}/api/checkings`, {
-                method: 'POST',
+            const url = isEdit ? `${API_BASE}/api/checkings/${payload.id}` : `${API_BASE}/api/checkings`;
+            const method = isEdit ? 'PUT' : 'POST';
+            const res = await fetch(url, {
+                method: method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
+
             if(res.ok) {
                 closeCheckingModal();
                 fetchCheckings();
             } else {
                 alert('Gagal menyimpan data pengecekan ke server.');
             }
-        } catch(e) { alert('Terjadi kesalahan jaringan (Net Error).'); }
+        } catch(e) {
+            console.error(e);
+            alert('Kesalahan koneksi saat menyimpan pengecekan.');
+        }
         btn.textContent = oldText;
-    }
+    };
+
+    window.deleteChecking = async function(id) {
+        if(!confirm('Hapus data pengecekan ini?')) return;
+        try {
+            const res = await fetch(`${API_BASE}/api/checkings/${id}`, { method: 'DELETE' });
+            if(res.ok) fetchCheckings();
+        } catch(e) { console.error(e); }
+    };
 
     async function openAgendaModal(agendaId = null) {
         editAgendaId = agendaId;
@@ -2440,13 +2486,16 @@
 
             // 2. Render Checking Dots [NEW Revision 4]
             const dailyCheckings = (allCheckings || []).filter(c => c.check_date === dateStr);
-            dailyCheckings.forEach(c => {
+            (dailyCheckings || []).forEach(chk => {
                 const dot = document.createElement('div');
-                const supColor = SUPERVISOR_COLORS[c.supervisor_name] || '#64748b';
+                const color = SUPERVISOR_COLORS[chk.supervisor_name] || '#64748b';
                 dot.className = 'dot-check';
-                dot.style.backgroundColor = supColor;
-                dot.title = `Pengecekan: ${c.project_title} - ${c.description} (${c.supervisor_name})`;
-                dot.onclick = (e) => { e.stopPropagation(); alert(`${c.project_title}\n\n${c.description}\nSupervisor: ${c.supervisor_name}`); };
+                dot.style.backgroundColor = color;
+                dot.title = `${chk.project_title}: ${chk.description} (${chk.supervisor_name})`;
+                dot.onclick = (e) => {
+                    e.stopPropagation();
+                    openCheckingModal(chk.id);
+                };
                 dotsArea.appendChild(dot);
             });
 
@@ -2466,7 +2515,13 @@
 
     window.fetchWorkload = async function() {
         try {
-            const res = await fetch(`${API_BASE}/api/workload`);
+            const picker = document.getElementById('workload-month-picker');
+            if(picker && !picker.value) {
+                picker.value = new Date().toISOString().substring(0, 7); // Default to current YYYY-MM
+            }
+            const monthStr = picker ? picker.value : new Date().toISOString().substring(0, 7);
+            
+            const res = await fetch(`${API_BASE}/api/workload?month=${monthStr}`);
             if(res.ok) {
                 window.allWorkloadData = await res.json();
                 renderWorkload();
@@ -2632,20 +2687,22 @@
     };
 
     window.saveWorkloadMatrix = async function() {
-        const btn = event.currentTarget;
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">sync</span> Menyimpan...';
-        btn.disabled = true;
+        if(!confirm('Simpan perubahan beban proyek untuk bulan ini?')) return;
+        
+        const picker = document.getElementById('workload-month-picker');
+        const monthStr = picker ? picker.value : new Date().toISOString().substring(0, 7);
+
         try {
-            const res = await fetch(`${API_BASE}/api/workload`, {
+            const res = await fetch(`${API_BASE}/api/workload?month=${monthStr}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(window.allWorkloadData)
             });
-            if(res.ok) alert('Data beban proyek berhasil disimpan ke server! ✅');
-            else alert('Gagal menyimpan ke server.');
-        } catch(e) { alert('Kesalahan jaringan: ' + e); }
-        btn.innerHTML = originalText; btn.disabled = false;
+            if(res.ok) {
+                alert(`Data beban proyek bulan ${monthStr} berhasil disimpan.`);
+                fetchWorkload();
+            }
+        } catch(e) { alert('Gagal menyimpan matrix beban.'); }
     };
 
     window.downloadWorkloadCSV = function() {

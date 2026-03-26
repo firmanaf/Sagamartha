@@ -350,15 +350,39 @@ def approve_overtime(record_id: str, manager_approval: str, comments: Optional[s
     raise HTTPException(status_code=404, detail="Overtime not found.")
 
 @app.get("/api/workload")
-def get_workload():
-    data = load_json(WORKLOAD_FILE, {"projects": [], "matrix": {}})
-    return data
+def get_workload(month: str = None):
+    # Returns workload for a specific month (YYYY-MM). 
+    # If not found, attempts to copy from the most recent previous month.
+    all_data = load_json(WORKLOAD_FILE, {})
+    
+    if not month:
+        from datetime import datetime
+        month = datetime.now().strftime("%Y-%m")
+        
+    if month in all_data:
+        return all_data[month]
+    
+    # Copy-on-access logic for new months
+    sorted_months = sorted(all_data.keys(), reverse=True)
+    for m in sorted_months:
+        if m < month:
+            # Found a previous month, return it as a template (caller will save it later)
+            return all_data[m]
+            
+    return {"projects": [], "matrix": {}}
 
 @app.post("/api/workload")
-def save_workload(data: WorkloadData):
+def save_workload(data: WorkloadData, month: str = None):
+    # Saves workload for a specific month
+    if not month:
+        from datetime import datetime
+        month = datetime.now().strftime("%Y-%m")
+        
+    all_data = load_json(WORKLOAD_FILE, {})
+    all_data[month] = data.dict()
     with open(WORKLOAD_FILE, "w", encoding="utf-8") as f:
-        json.dump(data.dict(), f, indent=2)
-    return {"message": "Workload data saved successfully."}
+        json.dump(all_data, f, indent=2)
+    return {"message": f"Workload data for {month} saved successfully."}
 
 @app.get("/api/agendas", response_model=List[AgendaRecord])
 def get_agendas():
@@ -406,6 +430,17 @@ def create_checking(record: CheckingRecord):
     with open(CHECKINGS_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=2)
     return {"message": "Checking recorded successfully."}
+
+@app.put("/api/checkings/{checking_id}")
+def update_checking(checking_id: str, record: CheckingRecord):
+    records = load_json(CHECKINGS_FILE, [])
+    for i, r in enumerate(records):
+        if r["id"] == checking_id:
+            records[i] = record.dict()
+            with open(CHECKINGS_FILE, "w", encoding="utf-8") as f:
+                json.dump(records, f, indent=2)
+            return {"message": "Checking record updated successfully."}
+    raise HTTPException(status_code=404, detail="Checking record not found.")
 
 @app.delete("/api/checkings/{checking_id}")
 def delete_checking(checking_id: str):
