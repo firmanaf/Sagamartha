@@ -911,7 +911,7 @@
             if(!allUsers || allUsers.length === 0) {
                 await fetchUsers();
             }
-            if(!window.allWorkloadData || !window.allWorkloadData.projects) {
+            if(!window.allWorkloadData || !window.allWorkloadData.projects || window.allWorkloadData.projects.length === 0) {
                 await fetchWorkload();
             }
             const projects = window.allWorkloadData?.projects || [];
@@ -2612,6 +2612,7 @@
                 window.allWorkloadData = await res.json();
                 renderWorkload();
                 renderDashboardWorkloadRankings(); // [NEW Revision 4.4]
+                populateProjectDropdowns(); // Ensure dropdowns are updated across all modals
             }
         } catch(e) { console.warn('Workload fetch error:', e); }
     };
