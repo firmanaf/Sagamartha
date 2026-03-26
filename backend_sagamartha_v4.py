@@ -8,7 +8,15 @@ import json
 import os
 import hashlib
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
 app = FastAPI(title="Sagamartha HR Enterprise v4 Backend")
+app.mount("/static", StaticFiles(directory="."), name="static")
+
+@app.get("/")
+def read_root():
+    return FileResponse("frontend_sagamartha_v4.html")
 
 # Konfigurasi CORS agar frontend dari domain lain (Vercel/Netlify) bisa memanggil API backend ini
 app.add_middleware(
@@ -30,6 +38,7 @@ ATTENDANCE_FILE = os.path.join(DATA_DIR, "enterprise_attendance.json")
 OVERTIME_FILE = os.path.join(DATA_DIR, "enterprise_overtime.json")
 WORKLOAD_FILE = os.path.join(DATA_DIR, "project_workload_pwkv4.json")
 AGENDAS_FILE = os.path.join(DATA_DIR, "enterprise_agendas.json")
+CHECKINGS_FILE = os.path.join(DATA_DIR, "enterprise_checkings.json")
 
 class UserBase(BaseModel):
     username: str
@@ -58,6 +67,13 @@ class AgendaRecord(BaseModel):
     end_date: str
     supervisor_name: str
     involved_employees: List[str] # Usernames
+
+class CheckingRecord(BaseModel):
+    id: str
+    project_title: str
+    check_date: str
+    supervisor_name: str
+    description: str
 
 class AttendanceRecord(BaseModel):
     id: str
@@ -377,6 +393,30 @@ def delete_agenda(agenda_id: str):
     with open(AGENDAS_FILE, "w", encoding="utf-8") as f:
         json.dump(agendas, f, indent=2)
     return {"message": "Agenda deleted."}
+
+# CHECKINGS API
+@app.get("/api/checkings", response_model=List[CheckingRecord])
+def get_checkings():
+    return load_json(CHECKINGS_FILE, [])
+
+@app.post("/api/checkings", status_code=status.HTTP_201_CREATED)
+def create_checking(record: CheckingRecord):
+    records = load_json(CHECKINGS_FILE, [])
+    records.append(record.dict())
+    with open(CHECKINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=2)
+    return {"message": "Checking recorded successfully."}
+
+@app.delete("/api/checkings/{checking_id}")
+def delete_checking(checking_id: str):
+    records = load_json(CHECKINGS_FILE, [])
+    initial_count = len(records)
+    records = [r for r in records if r["id"] != checking_id]
+    if len(records) == initial_count:
+        raise HTTPException(status_code=404, detail="Checking record not found.")
+    with open(CHECKINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=2)
+    return {"message": "Checking record deleted."}
 
 if __name__ == "__main__":
     import uvicorn

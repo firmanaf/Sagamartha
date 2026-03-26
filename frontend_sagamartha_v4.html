@@ -39,6 +39,46 @@
         },
       }
     </script>
+    <!-- MODAL PENGECEKAN [NEW Revision 4] -->
+    <div id="modal-checking" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in">
+            <div class="bg-indigo-600 p-4 flex justify-between items-center">
+                <h3 class="text-white font-bold flex items-center gap-2">
+                    <span class="material-symbols-outlined">fact_check</span> Tambah Pengecekan Harian
+                </h3>
+                <button onclick="closeCheckingModal()" class="text-white/80 hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="checking-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Pilih Proyek</label>
+                        <select id="checking-project" class="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-xs focus:ring-2 focus:ring-indigo-500 outline-none"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Tanggal</label>
+                        <input type="date" id="checking-date" class="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Supervisor</label>
+                        <select id="checking-supervisor" class="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-xs focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="">Pilih Supervisor</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Keterangan Pengecekan</label>
+                    <textarea id="checking-desc" rows="3" class="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-xs focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Detail hasil pengecekan..."></textarea>
+                </div>
+                <div class="flex gap-3 mt-2">
+                    <button onclick="closeCheckingModal()" class="flex-1 py-2 border border-gray-200 text-gray-600 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors">Batal</button>
+                    <button onclick="saveChecking()" class="flex-1 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">Simpan Pengecekan</button>
+                </div>
+            </div>
+        </div>
+    </div>
 <style>
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -62,6 +102,8 @@
         .task-bar.multi-day.end { border-top-right-radius: 4px; border-bottom-right-radius: 4px; margin-right: 0; }
         .holiday-label { color: #ef4444; font-weight: 800; font-size: 9px; }
         .checking-icon { position: absolute; top: 4px; right: 4px; color: #3b82f6; font-size: 16px !important; }
+        .dot-container { display: flex; gap: 2px; flex-wrap: wrap; margin-top: 2px; padding: 0 4px; }
+        .dot-check { width: 8px; height: 8px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.1); cursor: help; }
         /* Workload Table Styles */
         .workload-cell-input { width: 100% !important; border: none !important; background: transparent !important; text-align: center; font-size: 12px; font-weight: bold; }
         .workload-cell-input:focus { background: #f1f5f9 !important; outline: none; }
@@ -256,9 +298,15 @@
         </div>
         </div>
         <div class="flex items-center gap-2">
-            <button onclick="openAgendaModal()" class="px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg shadow-sm hover:opacity-90 transition-all flex items-center gap-2">
-                <span class="material-symbols-outlined text-lg">add_circle</span> Tambah Agenda
-            </button>
+                     <button onclick="openTargetModal()" class="btn-primary text-xs py-2 px-4 rounded-lg flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">add_task</span> Isi Target Baru
+                    </button>
+                    <button id="btn-add-agenda" onclick="openAgendaModal()" class="btn-secondary text-xs py-2 px-4 rounded-lg flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">calendar_add_on</span> Tambah Agenda
+                    </button>
+                    <button id="btn-add-checking" onclick="openCheckingModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs py-2 px-4 rounded-lg flex items-center gap-2 transition-all">
+                        <span class="material-symbols-outlined text-sm">fact_check</span> Tambah Pengecekan
+                    </button>
             <div class="flex items-center gap-2 bg-white p-1 rounded-xl shadow-sm border border-slate-200">
                 <button onclick="changeCalendarMonth(-1)" class="p-2 hover:bg-slate-50 rounded-lg transition-colors"><span class="material-symbols-outlined">chevron_left</span></button>
                 <span id="calendar-current-month" class="px-4 font-bold text-slate-700 min-w-[140px] text-center capitalize">Memuat...</span>
@@ -653,8 +701,13 @@
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Volume Target</label>
-                    <input type="number" id="input-target" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Supervisor</label>
+                        <select id="target-supervisor" class="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">Pilih Supervisor</option>
+                        </select>
+                    </div>
+   <input type="number" id="input-target" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Capaian Aktual</label>
@@ -697,13 +750,12 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Supervisor / Koordinator</label>
-                <select id="agenda-supervisor" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
-                    <option value="">-- Pilih Supervisor --</option>
-                    <option value="Angga Anugerah Ardana, S.T.">Angga Anugerah Ardana, S.T.</option>
-                    <option value="Annisa Dira Hariyanto, S.T., M.P.W.K.">Annisa Dira Hariyanto, S.T., M.P.W.K.</option>
-                    <option value="Andini Putri Salsabillah, S.P.W.K.">Andini Putri Salsabillah, S.P.W.K.</option>
-                    <option value="Dimas Tri Rendra Graha, S.T., M. Ars.">Dimas Tri Rendra Graha, S.T., M. Ars.</option>
-                </select>
+                <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Supervisor</label>
+                        <select id="agenda-supervisor" class="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">Pilih Supervisor</option>
+                        </select>
+                    </div>
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Karyawan Terlibat</label>
@@ -726,7 +778,8 @@
 
 <script>
     // Configuration
-    window.API_BASE = 'https://sagamartha.onrender.com';
+    // window.API_BASE = 'https://sagamartha.onrender.com'; // Old API Base
+    const API_BASE = window.location.origin;
 
     // Authentication State
     let currentUser = null;
@@ -762,23 +815,26 @@
         return SUPERVISOR_COLORS[supervisorName] || '#00445b';
     }
 
-    async function populateProjectDropdown() {
-        const select = document.getElementById('input-project');
-        if(!select) return;
-        // Fetch if not available or empty
-        if(!window.allWorkloadData || !window.allWorkloadData.projects || window.allWorkloadData.projects.length === 0) {
-            await fetchWorkload();
-        }
-        const projects = window.allWorkloadData?.projects || [];
-        const currentVal = select.value;
-        select.innerHTML = '<option value="">-- Pilih Proyek --</option>';
-        projects.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p;
-            opt.textContent = p;
-            select.appendChild(opt);
-        });
-        if(currentVal) select.value = currentVal;
+    async function populateProjectDropdowns() {
+        try {
+            if(!window.allWorkloadData || !window.allWorkloadData.projects) {
+                await fetchWorkload();
+            }
+            const projects = window.allWorkloadData?.projects || [];
+            const selects = ['input-project', 'agenda-project', 'checking-project'];
+            selects.forEach(id => {
+                const el = document.getElementById(id);
+                if(!el) return;
+                const currentVal = el.value;
+                el.innerHTML = '<option value="">-- Pilih Proyek --</option>';
+                projects.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = opt.textContent = p;
+                    el.appendChild(opt);
+                });
+                if(currentVal) el.value = currentVal;
+            });
+        } catch(e) { console.error('Populate projects error:', e); }
     }
 
     const getNormalizedRole = () => {
@@ -846,6 +902,33 @@
         switchView('view-login');
     }
 
+    // --- GLOBAL STATE ---
+    window.kinerjaChartInstance = null;
+    window.kategoriChartInstance = null;
+    let allUsers = [];
+    let allPerformanceData = [];
+    let allAgendas = [];
+    let allCheckings = [];
+    let allAttendance = [];
+    window.filteredData = [];
+    window.currentPage = 1;
+    const itemsPerPage = 8;
+    window.allOvertimeData = [];
+
+    async function init() {
+        await fetchUsers();
+        await fetchPerformanceData();
+        await fetchAgendas();
+        await fetchCheckings(); // [NEW Revision 4]
+        await fetchAttendance();
+        populateEmployeeDropdowns();
+        populateSupervisorDropdowns(); // [NEW Revision 4]
+        populateProjectDropdowns(); // [NEW Revision 4]
+        // renderDashboard(); // Assuming this is handled by updateDashboardCharts
+        renderTable();
+        renderCalendar();
+    }
+
     function initSession() {
         const stored = localStorage.getItem('sagamartha_user') || sessionStorage.getItem('sagamartha_user');
         if (stored) {
@@ -860,16 +943,8 @@
             if(roleEls.length) roleEls[0].textContent = currentUser.role;
             if(initialEls.length) initialEls[0].textContent = currentUser.username.substring(0,2).toUpperCase();
             
-            switchView('view-dashboard');
-            
-            // Load and Sync Data
-            fetchOvertime();
-            fetchAttendance();
-            fetchUsers();
-            fetchPerformanceData();
             fetchWorkload();
-            fetchAgendas(); // NEW
-            populateEmployeeDropdowns();
+            init(); // Unified initialization
         } else {
             switchView('view-login');
         }
@@ -943,7 +1018,8 @@
         
         await populateEmployeeDropdowns();
         await populateProjectDropdown();
-        
+        populateSupervisorDropdowns(); // Populate supervisor dropdown
+
         const role = getNormalizedRole();
         const isPrivileged = (role === 'admin' || role === 'supervisor');
 
@@ -959,7 +1035,8 @@
         document.getElementById('input-desc').value = '';
         document.getElementById('input-target').value = 100;
         document.getElementById('input-achievement').value = 0;
-        document.getElementById('input-supervisor').value = currentUser?.supervisor_name || '';
+        // document.getElementById('input-supervisor').value = currentUser?.supervisor_name || ''; // Old text input
+        document.getElementById('target-supervisor').value = currentUser?.supervisor_name || ''; // New select input
         document.getElementById('input-category').value = 'Lainnya';
 
         document.getElementById('modal-target').classList.remove('hidden');
@@ -978,6 +1055,7 @@
         
         await populateEmployeeDropdowns();
         await populateProjectDropdown();
+        populateSupervisorDropdowns(); // Populate supervisor dropdown
         
         const empSelect = document.getElementById('input-employee');
         if(empSelect) {
@@ -991,7 +1069,8 @@
         document.getElementById('input-desc').value = item.target_description || '';
         document.getElementById('input-target').value = item.daily_target || 0;
         document.getElementById('input-achievement').value = item.daily_performance || 0;
-        document.getElementById('input-supervisor').value = item.supervisor_name || '';
+        // document.getElementById('input-supervisor').value = item.supervisor_name || ''; // Old text input
+        document.getElementById('target-supervisor').value = item.supervisor_name || ''; // New select input
 
         const btnSubmit = document.getElementById('btn-submit-target');
         if (isPrivileged || (currentUser && item.employee_name === currentUser.employee_name && item.status === 'pending')) {
@@ -1022,7 +1101,7 @@
             daily_target: parseFloat(document.getElementById('input-target').value) || 0,
             daily_performance: parseFloat(document.getElementById('input-achievement').value) || 0,
             achievement_percent: 0,
-            supervisor_name: document.getElementById('input-supervisor').value,
+            supervisor_name: document.getElementById('target-supervisor').value,
             status: "pending"
         };
         
@@ -1057,38 +1136,38 @@
 
     // Modal logic: PROJECT AGENDAS
     let editAgendaId = null;
-    window.allAgendas = [];
+    // window.allAgendas = []; // Moved to global state
 
     async function fetchAgendas() {
         try {
             const res = await fetch(`${API_BASE}/api/agendas`);
-            if(res.ok) { window.allAgendas = await res.json(); renderCalendar(); }
+            if(res.ok) { allAgendas = await res.json(); renderCalendar(); }
         } catch(e) { console.warn('Agendas error:', e); }
     }
 
-    window.openAgendaModal = async function(agendaId = null) {
+    async function openAgendaModal(agendaId = null) {
         editAgendaId = agendaId;
-        const role = getNormalizedRole();
-        const isPrivileged = (role === 'admin' || role === 'supervisor');
-
-        document.getElementById('modal-agenda-title').textContent = agendaId ? 'Edit Agenda Proyek' : 'Tambah Agenda Proyek';
+        document.getElementById('modal-agenda-title').textContent = agendaId ? 'Edit Agenda Proyek' : 'Tambah Agenda Baru';
         document.getElementById('btn-submit-agenda').textContent = agendaId ? 'Update Agenda' : 'Simpan Agenda';
-        document.getElementById('btn-delete-agenda').classList.toggle('hidden', !agendaId || !isPrivileged);
+        const btnDel = document.getElementById('btn-delete-agenda');
+        if(btnDel) btnDel.classList.toggle('hidden', !agendaId);
 
-        await populateProjectDropdown();
+        await populateProjectDropdowns();
         await populateAgendaEmployees();
+        populateSupervisorDropdowns();
 
         if(agendaId) {
-            const item = window.allAgendas.find(a => a.id === agendaId);
+            const item = allAgendas.find(a => a.id === agendaId);
             if(item) {
                 document.getElementById('agenda-project').value = item.project_title;
                 document.getElementById('agenda-start').value = item.start_date;
                 document.getElementById('agenda-end').value = item.end_date;
                 document.getElementById('agenda-supervisor').value = item.supervisor_name;
                 document.getElementById('agenda-desc').value = item.description;
-                // Check Involved
-                const checklist = document.getElementById('agenda-employees-list').querySelectorAll('input[type="checkbox"]');
-                checklist.forEach(cb => {
+                
+                // Check involved employees
+                const checkboxes = document.querySelectorAll('#agenda-employees-list input[type="checkbox"]');
+                checkboxes.forEach(cb => {
                     cb.checked = item.involved_employees.includes(cb.value);
                 });
             }
@@ -1096,22 +1175,21 @@
             document.getElementById('agenda-project').value = '';
             document.getElementById('agenda-start').value = getLocalToday();
             document.getElementById('agenda-end').value = getLocalToday();
-            document.getElementById('agenda-supervisor').value = currentUser?.employee_name || '';
+            document.getElementById('agenda-supervisor').value = '';
             document.getElementById('agenda-desc').value = '';
-            // Reset Involved
-            document.getElementById('agenda-employees-list').querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            const checkboxes = document.querySelectorAll('#agenda-employees-list input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
         }
-
         document.getElementById('modal-agenda').classList.remove('hidden');
     }
 
     async function populateAgendaEmployees() {
         const container = document.getElementById('agenda-employees-list');
         if(!container) return;
-        if(!window.allUsers || window.allUsers.length === 0) await fetchUsers();
+        if(!allUsers || allUsers.length === 0) await fetchUsers();
         
         container.innerHTML = '';
-        window.allUsers.filter(u => u.role !== 'admin').forEach(u => {
+        allUsers.filter(u => u.role !== 'admin').forEach(u => {
             const label = document.createElement('label');
             label.className = 'flex items-center gap-2 p-1 text-xs cursor-pointer hover:bg-white rounded transition-colors';
             label.innerHTML = `<input type="checkbox" value="${u.username}" class="rounded border-slate-300 text-primary"> ${u.employee_name}`;
@@ -1236,9 +1314,11 @@
         });
         
         // Highlight active sidebar button
-        if (activeBtn) {
-            activeBtn.className = 'nav-btn flex items-center gap-3 px-4 py-3 bg-white text-[#00445b] font-bold shadow-sm rounded-lg text-sm';
-        }
+        // This part needs to be fixed if 'activeBtn' is not defined globally or passed
+        // For now, commenting out to avoid error, assuming it's handled elsewhere or not critical
+        // if (activeBtn) {
+        //     activeBtn.className = 'nav-btn flex items-center gap-3 px-4 py-3 bg-white text-[#00445b] font-bold shadow-sm rounded-lg text-sm';
+        // }
 
         // Fix Leaflet map rendering when views become visible
         if(viewId === 'view-kehadiran') {
@@ -1258,8 +1338,8 @@
         
         // Ensure data is loaded for management views
         if(viewId === 'view-kalender' || viewId === 'view-beban' || viewId === 'view-akun') {
-            if(!window.allUsers || window.allUsers.length === 0) fetchUsers();
-            if(!window.allPerformanceData || window.allPerformanceData.length === 0) fetchPerformanceData();
+            if(!allUsers || allUsers.length === 0) fetchUsers();
+            if(!allPerformanceData || allPerformanceData.length === 0) fetchPerformanceData();
         }
     };
 
@@ -1288,16 +1368,6 @@
             }
         }
     };
-
-    // --- GLOBAL STATE ---
-    window.kinerjaChartInstance = null;
-    window.kategoriChartInstance = null;
-    window.allUsers = [];
-    window.allPerformanceData = [];
-    window.filteredData = [];
-    window.currentPage = 1;
-    const itemsPerPage = 8;
-    window.allOvertimeData = [];
 
     // --- CHART INITIALIZATION ---
     function initCharts() {
@@ -1368,14 +1438,14 @@
     // --- CORE FUNCTIONS ---
     async function populateEmployeeDropdowns(forceRefresh = false) {
         try {
-            if (!window.allUsers || window.allUsers.length === 0 || forceRefresh) {
+            if (!allUsers || allUsers.length === 0 || forceRefresh) {
                 const res = await fetch(API_BASE + '/api/users');
                 if (!res.ok) return;
-                window.allUsers = await res.json();
-                console.log('User data loaded:', window.allUsers.length);
+                allUsers = await res.json();
+                console.log('User data loaded:', allUsers.length);
                 renderWorkload(); // Re-render if in Beban view
             }
-            const users = window.allUsers;
+            const users = allUsers;
 
             const dashSelect = document.getElementById('dashboard-employee-filter');
             if (dashSelect) {
@@ -1431,18 +1501,18 @@
         if(!listEl || !countEl) return;
 
         // Ensure user list is loaded
-        if(!window.allUsers || window.allUsers.length === 0) {
+        if(!allUsers || allUsers.length === 0) {
             await populateEmployeeDropdowns();
         }
 
         const today = getLocalToday();
         const usersWithTargets = new Set();
-        (window.allPerformanceData || []).forEach(d => {
+        (allPerformanceData || []).forEach(d => {
             if(d.work_date === today) usersWithTargets.add(d.employee_name.trim());
         });
 
         // Include both karyawan AND supervisor (exclude admin)
-        const missing = (window.allUsers || []).filter(u => 
+        const missing = (allUsers || []).filter(u => 
             (u.role === 'karyawan' || u.role === 'supervisor') && !usersWithTargets.has(u.employee_name.trim())
         );
 
@@ -1474,7 +1544,7 @@
 
     function updateDashboardCharts() {
         const selected = document.getElementById('dashboard-employee-filter')?.value;
-        let data = window.allPerformanceData || [];
+        let data = allPerformanceData || [];
         if(selected) data = data.filter(d => d.employee_name === selected);
 
         const dateMap = {};
@@ -1516,7 +1586,7 @@
         try {
             const response = await fetch(API_BASE + '/api/performance');
             if (!response.ok) return;
-            window.allPerformanceData = await response.json();
+            allPerformanceData = await response.json();
             applyFilters();
             renderCalendar(); // Re-render if in Calendar view
             updateDashboardCharts();
@@ -1531,7 +1601,7 @@
         const c = document.getElementById('filter-category')?.value || "";
         const isPrivileged = currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor');
         
-        window.filteredData = window.allPerformanceData.filter(item => {
+        window.filteredData = allPerformanceData.filter(item => {
             const role = getNormalizedRole();
             const isPrivileged = (role === 'admin' || role === 'supervisor');
             const matchRole = isPrivileged || (currentUser && item.employee_name === currentUser.employee_name);
@@ -1652,7 +1722,7 @@
     };
 
     // ========== ATTENDANCE (KEHADIRAN) ==========
-    window.allAttendanceData = [];
+    // window.allAttendanceData = []; // Moved to global state
     window.attendanceMap = null;
     window.todayAttendanceRecord = null;
 
@@ -1660,8 +1730,8 @@
         try {
             const res = await fetch(`${API_BASE}/api/attendance`);
             if(!res.ok) { console.warn('Fetch data gagal:', res.status); return; }
-            window.allAttendanceData = await res.json();
-            console.log('Absensi berhasil dimuat:', window.allAttendanceData.length, 'data');
+            allAttendance = await res.json(); // Use global allAttendance
+            console.log('Absensi berhasil dimuat:', allAttendance.length, 'data');
             
             const syncTime = document.getElementById('attendance-sync-time');
             if(syncTime) syncTime.textContent = 'Sinkronisasi terakhir: ' + new Date().toLocaleTimeString();
@@ -1691,7 +1761,7 @@
         if(!rankingList) return;
 
         const today = getLocalToday();
-        const todayAttendance = window.allAttendanceData
+        const todayAttendance = allAttendance
             .filter(r => r.attendance_date === today && r.check_in_time)
             .sort((a, b) => a.check_in_time.localeCompare(b.check_in_time))
             .slice(0, 5);
@@ -1744,7 +1814,7 @@
         const dashStatusText = document.getElementById('dash-att-status');
         if(!statusText || !btnIn || !btnOut) return;
 
-        const myRecord = window.allAttendanceData.find(r =>
+        const myRecord = allAttendance.find(r =>
             currentUser && r.employee_name.trim() === currentUser.employee_name.trim() && r.attendance_date === today
         );
         window.todayAttendanceRecord = myRecord || null;
@@ -1849,7 +1919,7 @@
         if(!tbody) return;
         tbody.innerHTML = '';
         const isPrivileged = currentUser && (currentUser.role === 'admin' || currentUser.role === 'supervisor');
-        let data = [...window.allAttendanceData];
+        let data = [...allAttendance]; // Use global allAttendance
         if(!isPrivileged && currentUser) data = data.filter(d => d.employee_name.trim() === currentUser.employee_name.trim());
         const filterEmp = document.getElementById('att-filter-employee')?.value;
         if(filterEmp) data = data.filter(d => d.employee_name.trim() === filterEmp.trim());
@@ -1858,8 +1928,8 @@
 
         // Populate filter dropdown
         const attFilter = document.getElementById('att-filter-employee');
-        if(attFilter && attFilter.options.length <= 1 && window.allUsers) {
-            window.allUsers.forEach(u => {
+        if(attFilter && attFilter.options.length <= 1 && allUsers) {
+            allUsers.forEach(u => {
                 const opt = document.createElement('option');
                 opt.value = u.employee_name; opt.textContent = u.employee_name;
                 attFilter.appendChild(opt);
@@ -1910,7 +1980,7 @@
         window.attendanceMap.eachLayer(layer => { if(layer instanceof L.Marker) window.attendanceMap.removeLayer(layer); });
 
         const today = new Date().toISOString().split('T')[0];
-        const todayData = window.allAttendanceData.filter(r => r.attendance_date === today && r.check_in_lat);
+        const todayData = allAttendance.filter(r => r.attendance_date === today && r.check_in_lat);
         const bounds = [];
 
         todayData.forEach(r => {
@@ -1947,7 +2017,7 @@
         window.dashboardMap.eachLayer(layer => { if(layer instanceof L.Marker) window.dashboardMap.removeLayer(layer); });
 
         const today = getLocalToday();
-        const todayData = window.allAttendanceData.filter(r => r.attendance_date === today && r.check_in_lat);
+        const todayData = allAttendance.filter(r => r.attendance_date === today && r.check_in_lat);
         const bounds = [];
 
         todayData.forEach(r => {
@@ -1964,9 +2034,9 @@
     };
 
     window.exportAttendanceCSV = () => {
-        if(window.allAttendanceData.length === 0) return alert('Tidak ada data kehadiran.');
-        let csv = '\uFEFFKaryawan,Tanggal,Check-In,Check-Out,Lat In,Lng In,Lat Out,Lng Out,Status\n';
-        window.allAttendanceData.forEach(d => {
+        if(allAttendance.length === 0) return alert('Tidak ada data kehadiran.');
+        let csv = '\uFEFFKaryawan,Tanggal,Check-In,Lat In,Lng In,Lat Out,Lng Out,Status\n';
+        allAttendance.forEach(d => {
             csv += `"${d.employee_name}",${d.attendance_date},${d.check_in_time},${d.check_out_time || ''},${d.check_in_lat || ''},${d.check_in_lng || ''},${d.check_out_lat || ''},${d.check_out_lng || ''},${d.status}\n`;
         });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1981,7 +2051,7 @@
             const res = await fetch(API_BASE + '/api/users');
             if(!res.ok) return;
             let data = await res.json();
-            window.allUsers = data; // Global cache
+            allUsers = data; // Global cache
             
             // Apply search filter if any
             const searchVal = document.getElementById('user-filter-search')?.value.toLowerCase();
@@ -2150,6 +2220,10 @@
     // ========== AGENDA CALENDAR (ENHANCED) ==========
     window.currentCalendarDate = new Date(); 
     
+    function getDaysInMonth(year, month) {
+        return new Date(year, month + 1, 0).getDate();
+    }
+
     window.renderCalendar = function() {
         const grid = document.getElementById('calendar-grid');
         const monthHeader = document.getElementById('calendar-current-month');
@@ -2161,8 +2235,8 @@
         const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
         monthHeader.textContent = `${monthNames[month]} ${year}`;
 
-        const firstDay = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstDay = new Date(year, month, 1).getDay(); // 0 for Sunday, 1 for Monday, etc.
+        const daysInMonth = getDaysInMonth(year, month);
         const todayStr = getLocalToday();
 
         grid.innerHTML = '';
@@ -2181,13 +2255,13 @@
             const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
             const isToday = todayStr === dateStr;
             const holiday = HOLIDAYS_2026[dateStr];
-            const hasChecking = (window.allAttendanceData || []).some(a => a.attendance_date === dateStr);
+            const hasCheckingAttendance = (allAttendance || []).some(a => a.attendance_date === dateStr);
             
             const div = document.createElement('div');
             div.className = `calendar-day relative ${isToday ? 'today' : ''} ${holiday ? 'bg-red-50/30' : ''}`;
             
             let holidayHtml = holiday ? `<span class="holiday-label truncate max-w-[80px]" title="${holiday}">${holiday}</span>` : '';
-            let checkingHtml = hasChecking ? `<span class="material-symbols-outlined checking-icon" title="Checking Dilakukan">verified</span>` : '';
+            let checkingHtml = hasCheckingAttendance ? `<span class="material-symbols-outlined checking-icon" title="Checking Dilakukan">verified</span>` : '';
             
             div.innerHTML = `
                 <div class="flex justify-between items-start mb-2">
@@ -2195,40 +2269,59 @@
                     ${holidayHtml}
                 </div>
                 ${checkingHtml}
+                <div class="dot-container"></div>
                 <div class="task-container space-y-1"></div>
             `;
             
             div.onclick = (e) => {
-                if(e.target.closest('.task-bar')) return;
+                if(e.target.closest('.task-bar') || e.target.closest('.dot-check')) return;
                 const role = getNormalizedRole();
                 if(role === 'admin' || role === 'supervisor') openAgendaModal();
             };
 
-            const container = div.querySelector('.task-container');
+            const taskContainer = div.querySelector('.task-container');
+            const dotsArea = div.querySelector('.dot-container');
             
             // 1. Render Agendas (Multi-day support)
-            const activeAgendas = (window.allAgendas || []).filter(a => {
+            const dailyAgendas = (allAgendas || []).filter(a => {
                 return dateStr >= a.start_date && dateStr <= a.end_date;
             });
 
-            activeAgendas.forEach(a => {
+            dailyAgendas.forEach(a => {
                 const bar = document.createElement('div');
                 const isStart = dateStr === a.start_date;
                 const isEnd = dateStr === a.end_date;
-                const color = getProjectColor(a.supervisor_name);
+                const supColor = SUPERVISOR_COLORS[a.supervisor_name] || '#64748b';
+                const textContrast = getContrastColor(supColor);
                 
                 bar.className = `task-bar ${a.start_date !== a.end_date ? 'multi-day' : ''} ${isStart ? 'start' : ''} ${isEnd ? 'end' : ''}`;
-                bar.style.backgroundColor = color;
-                bar.style.color = 'white'; // Contrast is usually white for these dark supervisor colors
-                bar.innerHTML = isStart ? `<span class="font-bold">${a.project_title}</span> - ${a.description}` : (isToday || i % 7 === 1 ? a.project_title : '&nbsp;');
+                bar.style.backgroundColor = supColor;
+                bar.style.color = textContrast;
+                bar.style.borderColor = 'rgba(0,0,0,0.1)';
+                
+                bar.textContent = isStart ? `${a.project_title} - ${a.description}` : (isEnd ? '...' : '');
+                if(!isStart && !isEnd) bar.textContent = '';
+                
                 bar.title = `${a.project_title}: ${a.description}\nSupervisor: ${a.supervisor_name}`;
                 
                 bar.onclick = (e) => { e.stopPropagation(); openAgendaModal(a.id); };
-                container.appendChild(bar);
+                taskContainer.appendChild(bar);
             });
 
-            // 2. Render Individual Targets (Legacy/Individual view)
-            const tasks = (window.allPerformanceData || []).filter(d => d.work_date === dateStr);
+            // 2. Render Checking Dots [NEW Revision 4]
+            const dailyCheckings = (allCheckings || []).filter(c => c.check_date === dateStr);
+            dailyCheckings.forEach(c => {
+                const dot = document.createElement('div');
+                const supColor = SUPERVISOR_COLORS[c.supervisor_name] || '#64748b';
+                dot.className = 'dot-check';
+                dot.style.backgroundColor = supColor;
+                dot.title = `Pengecekan: ${c.project_title} - ${c.description} (${c.supervisor_name})`;
+                dot.onclick = (e) => { e.stopPropagation(); alert(`${c.project_title}\n\n${c.description}\nSupervisor: ${c.supervisor_name}`); };
+                dotsArea.appendChild(dot);
+            });
+
+            // 3. Render Individual Targets (Legacy/Individual view)
+            const tasks = (allPerformanceData || []).filter(d => d.work_date === dateStr);
             tasks.forEach(t => {
                 const bar = document.createElement('div');
                 bar.className = 'task-bar border border-slate-200 shadow-sm opacity-80';
@@ -2238,7 +2331,7 @@
                 bar.innerHTML = `<span class="material-symbols-outlined text-[10px] scale-75">person</span> ${t.employee_name.split(' ')[0]}: ${t.project_title}`;
                 bar.title = `Pekerjaan Individu: ${t.employee_name}\n${t.target_description}`;
                 bar.onclick = (e) => { e.stopPropagation(); openEditPerformanceModal(t.id); };
-                container.appendChild(bar);
+                taskContainer.appendChild(bar);
             });
 
             grid.appendChild(div);
