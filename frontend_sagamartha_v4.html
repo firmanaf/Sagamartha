@@ -1146,6 +1146,61 @@
         } catch(e) { console.warn('Agendas error:', e); }
     }
 
+    async function fetchCheckings() {
+        try {
+            const res = await fetch(`${API_BASE}/api/checkings`);
+            if(res.ok) { allCheckings = await res.json(); renderCalendar(); }
+        } catch(e) { console.warn('Checkings error:', e); }
+    }
+
+    window.openCheckingModal = function() {
+        const role = getNormalizedRole();
+        if(role !== 'admin' && role !== 'supervisor') return alert('Akses ditolak. Fitur ini khusus Supervisor/Admin.');
+        
+        document.getElementById('checking-date').value = getLocalToday();
+        document.getElementById('checking-project').value = '';
+        document.getElementById('checking-supervisor').value = currentUser ? currentUser.employee_name : '';
+        document.getElementById('checking-desc').value = '';
+        
+        document.getElementById('modal-checking').classList.remove('hidden');
+    }
+
+    window.closeCheckingModal = function() {
+        document.getElementById('modal-checking').classList.add('hidden');
+    }
+
+    window.saveChecking = async function() {
+        const payload = {
+            project_title: document.getElementById('checking-project').value,
+            check_date: document.getElementById('checking-date').value,
+            supervisor_name: document.getElementById('checking-supervisor').value,
+            description: document.getElementById('checking-desc').value
+        };
+
+        if(!payload.project_title || !payload.check_date || !payload.supervisor_name || !payload.description) {
+            return alert('Harap isi semua kolom pengecekan dengan lengkap.');
+        }
+
+        const btn = document.querySelector('#modal-checking button:last-child');
+        const oldText = btn.textContent;
+        btn.textContent = 'Menyimpan...';
+
+        try {
+            const res = await fetch(`${API_BASE}/api/checkings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if(res.ok) {
+                closeCheckingModal();
+                fetchCheckings();
+            } else {
+                alert('Gagal menyimpan data pengecekan ke server.');
+            }
+        } catch(e) { alert('Terjadi kesalahan jaringan (Net Error).'); }
+        btn.textContent = oldText;
+    }
+
     async function openAgendaModal(agendaId = null) {
         editAgendaId = agendaId;
         document.getElementById('modal-agenda-title').textContent = agendaId ? 'Edit Agenda Proyek' : 'Tambah Agenda Baru';
