@@ -311,12 +311,12 @@
         <p class="text-[10px] text-slate-400 font-bold mt-3 uppercase">Punctuality Trend</p>
     </div>
 
-    <!-- Card 3: Employee of the Month -->
+    <!-- Card 3: Top Performer of the Month -->
     <div class="bg-gradient-to-br from-[#00445b] to-[#0b5d7a] p-6 rounded-2xl shadow-lg border border-primary/20 flex flex-col items-center text-center relative overflow-hidden group">
         <div class="absolute top-0 right-0 p-4 opacity-10">
             <span class="material-symbols-outlined text-6xl text-white">military_tech</span>
         </div>
-        <p class="text-[10px] font-extrabold text-white/60 uppercase tracking-widest mb-1">Employee of the Month</p>
+        <p class="text-[10px] font-extrabold text-white/60 uppercase tracking-widest mb-1">Top Performer of the Month</p>
         <div class="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center mb-2 border-2 border-white/30">
             <span id="eom-initials" class="text-xl font-black text-white">??</span>
         </div>
@@ -1825,7 +1825,7 @@
         });
     }
 
-    // ========== ADVANCED DASHBOARD ANALYTICS [Revision 6.1] ==========
+    // ========== ADVANCED DASHBOARD ANALYTICS [Revision 6.2] ==========
     function updateAdvancedDashboard() {
         if (!allUsers || allUsers.length === 0) return;
 
@@ -1839,17 +1839,36 @@
         if (scoreEl) scoreEl.textContent = `${totalAchievement.toFixed(1)}%`;
         if (barEl) barEl.style.width = `${totalAchievement}%`;
 
-        // 2. Calculate Combined Rankings
-        const rankingData = allUsers.map(user => {
-            const perfScore = calculateAchievementScoreForUser(user.employee_name);
-            const attScore = calculateAttendanceDiligenceScore(user.employee_name);
-            const combined = (perfScore * 0.7) + (attScore * 0.3);
+        // 2. Prepare Data & Normalization for Rankings
+        // We need to normalize Workload and Target Count across all users
+        const rawStats = allUsers.map(user => {
+            const logs = allPerformanceData.filter(d => d.employee_name === user.employee_name);
+            const workload = (window.allWorkloadData && window.allWorkloadData.matrix) 
+                ? (window.allWorkloadData.matrix[user.employee_name] || {}).sum_beban || 0 
+                : 0;
             return {
                 name: user.employee_name,
-                perf: perfScore,
-                att: attScore,
+                perf: calculateAchievementScoreForUser(user.employee_name),
+                att: calculateAttendanceDiligenceScore(user.employee_name),
+                workload: workload,
+                targetCount: logs.length
+            };
+        });
+
+        const maxWorkload = Math.max(1, ...rawStats.map(s => s.workload));
+        const maxTargets = Math.max(1, ...rawStats.map(s => s.targetCount));
+
+        const rankingData = rawStats.map(s => {
+            const normWorkload = (s.workload / maxWorkload) * 100;
+            const normTargets = (s.targetCount / maxTargets) * 100;
+            
+            // Weights: Achievement (50%), Attendance (20%), Workload (20%), Target Count (10%)
+            const combined = (s.perf * 0.5) + (s.att * 0.2) + (normWorkload * 0.2) + (normTargets * 0.1);
+            
+            return {
+                ...s,
                 combined: combined,
-                initials: user.employee_name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+                initials: s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
             };
         });
 
@@ -1863,7 +1882,7 @@
         const attScoreEl = document.getElementById('dash-attendance-score');
         if (attScoreEl) attScoreEl.textContent = `${avgDiligence.toFixed(1)}%`;
 
-        // 4. Update Employee of the Month
+        // 4. Update Top Performer of the Month
         if (rankingData.length > 0) {
             const top = rankingData[0];
             const eomName = document.getElementById('dash-eom-name');
@@ -1886,18 +1905,10 @@
                         <div>
                             <p class="text-sm font-bold text-slate-800">${item.name}</p>
                             <div class="flex items-center gap-2 mt-1">
-                                <div class="flex items-center gap-1">
-                                    <div class="w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
-                                        <div class="h-full bg-emerald-500" style="width: ${item.perf}%"></div>
-                                    </div>
-                                    <span class="text-[8px] font-bold text-emerald-600">${item.perf.toFixed(0)}% Perf</span>
-                                </div>
-                                <div class="flex items-center gap-1">
-                                    <div class="w-16 h-1 bg-slate-100 rounded-full overflow-hidden">
-                                        <div class="h-full bg-cyan-500" style="width: ${item.att}%"></div>
-                                    </div>
-                                    <span class="text-[8px] font-bold text-cyan-600">${item.att.toFixed(0)}% Att</span>
-                                </div>
+                                <span class="text-[8px] font-bold text-emerald-600 px-1.5 py-0.5 bg-emerald-50 rounded">${item.perf.toFixed(0)}% Perf</span>
+                                <span class="text-[8px] font-bold text-cyan-600 px-1.5 py-0.5 bg-cyan-50 rounded">${item.att.toFixed(0)}% Att</span>
+                                <span class="text-[8px] font-bold text-amber-600 px-1.5 py-0.5 bg-amber-50 rounded">${item.workload} Beban</span>
+                                <span class="text-[8px] font-bold text-indigo-600 px-1.5 py-0.5 bg-indigo-50 rounded">${item.targetCount} Target</span>
                             </div>
                         </div>
                     </div>
