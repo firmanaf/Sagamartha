@@ -130,8 +130,16 @@
         .task-bar.multi-day.end { border-top-right-radius: 4px; border-bottom-right-radius: 4px; margin-right: 0; }
         .holiday-label { color: #ef4444; font-weight: 800; font-size: 9px; }
         .checking-icon { position: absolute; top: 4px; right: 4px; color: #3b82f6; font-size: 16px !important; }
-        .dot-container { display: flex; gap: 2px; flex-wrap: wrap; margin-top: 2px; padding: 0 4px; }
-        .dot-text { font-size: 9px; font-weight: 600; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; }
+        .dot-container { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; padding: 0 4px; }
+        .dot-check-item { display: flex; align-items: center; gap: 4px; cursor: pointer; border-radius: 4px; padding: 1px 2px; transition: background 0.2s; }
+        .dot-check-item:hover { background: rgba(0,0,0,0.05); }
+        .dot-check { width: 8px; height: 8px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0; }
+        .dot-text { font-size: 9px; font-weight: 700; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+        
+        /* Legend Styles */
+        .calendar-legend { display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem; background: #f8fafc; border-top: 1px solid #e2e8f0; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 700; color: #475569; }
+        .legend-color { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.1); }
         
         /* Sticky Table Headers [Revision 5.4] */
         .table-responsive { max-height: 75vh; overflow-y: auto; position: relative; }
@@ -367,6 +375,8 @@
                         <span class="material-symbols-outlined text-sm">fact_check</span> Tambah Pengecekan
                     </button>
             <div class="flex items-center gap-2 bg-white p-1 rounded-xl shadow-sm border border-slate-200">
+                <button onclick="init()" class="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-400 hover:text-primary" title="Refresh Kalender"><span class="material-symbols-outlined">refresh</span></button>
+                <div class="w-px h-6 bg-slate-200 mx-1"></div>
                 <button onclick="changeCalendarMonth(-1)" class="p-2 hover:bg-slate-50 rounded-lg transition-colors"><span class="material-symbols-outlined">chevron_left</span></button>
                 <span id="calendar-current-month" class="px-4 font-bold text-slate-700 min-w-[140px] text-center capitalize">Memuat...</span>
                 <button onclick="changeCalendarMonth(1)" class="p-2 hover:bg-slate-50 rounded-lg transition-colors"><span class="material-symbols-outlined">chevron_right</span></button>
@@ -386,6 +396,9 @@
         </div>
         <div id="calendar-grid" class="calendar-grid">
             <!-- Calendar days will be injected here -->
+        </div>
+        <div id="calendar-legend" class="calendar-legend">
+            <!-- Legend will be injected here -->
         </div>
     </div>
 </section>
@@ -767,11 +780,11 @@
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Target</label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Target (Poin)</label>
                     <input type="number" id="input-target" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Capaian Aktual</label>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Capaian Aktual (Poin)</label>
                     <input type="number" id="input-achievement" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
                 </div>
             </div>
@@ -857,6 +870,17 @@
         "Andini Putri Salsabillah, S.P.W.K.": "#b45309",
         "Dimas Tri Rendra Graha, S.T., M. Ars.": "#065f46"
     };
+
+    function getSupervisorColor(name) {
+        if(!name) return '#64748b';
+        const cleanName = name.trim().toLowerCase();
+        for (const [key, color] of Object.entries(SUPERVISOR_COLORS)) {
+            if (key.toLowerCase().includes(cleanName) || cleanName.includes(key.toLowerCase().split(',')[0].trim())) {
+                return color;
+            }
+        }
+        return '#64748b';
+    }
 
     const HOLIDAYS_2026 = {
         "2026-01-01": "Tahun Baru Masehi",
@@ -2261,6 +2285,7 @@
             allUsers = data; // Global cache
             if (window.allWorkloadData && window.allWorkloadData.projects && window.allWorkloadData.projects.length > 0) {
                 renderWorkload(); // Fix async race condition for workload view
+                renderDashboardWorkloadRankings(); // Ensure dashboard is updated
             }
             
             // Apply search filter if any
@@ -2440,6 +2465,7 @@
     window.renderCalendar = function() {
         const grid = document.getElementById('calendar-grid');
         const monthHeader = document.getElementById('calendar-current-month');
+        const legendContainer = document.getElementById('calendar-legend');
         if(!grid || !monthHeader) return;
 
         const year = window.currentCalendarDate.getFullYear();
@@ -2453,6 +2479,7 @@
         const todayStr = getLocalToday();
 
         grid.innerHTML = '';
+        if(legendContainer) legendContainer.innerHTML = '';
 
         // Previous month padding
         const prevMonthLastDay = new Date(year, month, 0).getDate();
@@ -2483,11 +2510,11 @@
                 </div>
                 ${checkingHtml}
                 <div class="task-container space-y-1 mb-1"></div>
-                <div class="dot-container flex flex-wrap gap-1 px-1 mt-1"></div>
+                <div class="dot-container"></div>
             `;
             
             div.onclick = (e) => {
-                if(e.target.closest('.task-bar') || e.target.closest('.dot-check')) return;
+                if(e.target.closest('.task-bar') || e.target.closest('.dot-check-item')) return;
                 const role = getNormalizedRole();
                 if(role === 'admin' || role === 'supervisor') openAgendaModal();
             };
@@ -2504,7 +2531,7 @@
                 const bar = document.createElement('div');
                 const isStart = dateStr === a.start_date;
                 const isEnd = dateStr === a.end_date;
-                const supColor = SUPERVISOR_COLORS[a.supervisor_name] || '#64748b';
+                const supColor = getSupervisorColor(a.supervisor_name);
                 const textContrast = getContrastColor(supColor);
                 
                 bar.className = `task-bar ${a.start_date !== a.end_date ? 'multi-day' : ''} ${isStart ? 'start' : ''} ${isEnd ? 'end' : ''}`;
@@ -2525,17 +2552,17 @@
             const dailyCheckings = (allCheckings || []).filter(c => c.check_date === dateStr);
             (dailyCheckings || []).forEach(chk => {
                 const item = document.createElement('div');
-                item.className = 'dot-check-item';
+                item.className = 'dot-check-item flex items-center gap-1';
                 
                 const dot = document.createElement('div');
-                const color = SUPERVISOR_COLORS[chk.supervisor_name] || '#64748b';
+                const color = getSupervisorColor(chk.supervisor_name);
                 dot.className = 'dot-check';
                 dot.style.backgroundColor = color;
                 
                 const text = document.createElement('span');
                 text.className = 'dot-text';
-                text.textContent = chk.project_title + ' - ' + chk.description;
-                text.title = text.textContent;
+                text.textContent = chk.project_title;
+                text.title = chk.project_title + ' - ' + chk.description + ' (' + chk.supervisor_name + ')';
 
                 item.appendChild(dot);
                 item.appendChild(text);
@@ -2547,9 +2574,20 @@
                 dotsArea.appendChild(item);
             });
 
-            // Removed Individual Targets from Calendar to strictly show Agendas and Checking dots.
-
             grid.appendChild(div);
+        }
+
+        // 3. Render Legend
+        if(legendContainer) {
+            Object.entries(SUPERVISOR_COLORS).forEach(([name, color]) => {
+                const item = document.createElement('div');
+                item.className = 'legend-item flex items-center gap-2';
+                item.innerHTML = `
+                    <div class="legend-color" style="background-color: ${color}"></div>
+                    <span>${name.split(',')[0]}</span>
+                `;
+                legendContainer.appendChild(item);
+            });
         }
     };
 
