@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -27,6 +28,7 @@ USERS_FILE = os.path.join(DATA_DIR, "enterprise_users_pwkv4.json")
 RECORDS_FILE = os.path.join(DATA_DIR, "enterprise_records.json")
 ATTENDANCE_FILE = os.path.join(DATA_DIR, "enterprise_attendance.json")
 OVERTIME_FILE = os.path.join(DATA_DIR, "enterprise_overtime.json")
+WORKLOAD_FILE = os.path.join(DATA_DIR, "project_workload_pwkv4.json")
 
 class UserBase(BaseModel):
     username: str
@@ -69,6 +71,10 @@ class OvertimeRecord(BaseModel):
     reason: str
     manager_approval: str = "pending"
     comments: Optional[str] = ""
+
+class WorkloadData(BaseModel):
+    projects: List[str]
+    matrix: dict # {username: {project_nama: value}}
 
 class LoginRequest(BaseModel):
     username: str
@@ -116,9 +122,14 @@ def login(creds: LoginRequest):
             
     raise HTTPException(status_code=401, detail="Masukan username atau password salah")
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def read_root():
-    return {"message": "Sagamartha HR v4 API is running."}
+    # Serve the frontend file for local verification
+    try:
+        with open("frontend_sagamartha_v4.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        return f"<h1>Error loading frontend: {e}</h1>"
 
 @app.get("/api/users", response_model=List[UserBase])
 def get_users():
@@ -310,6 +321,17 @@ def approve_overtime(record_id: str, manager_approval: str, comments: Optional[s
                 json.dump(records, f, indent=2)
             return {"message": f"Overtime {record_id} marked as {manager_approval}."}
     raise HTTPException(status_code=404, detail="Overtime not found.")
+
+@app.get("/api/workload")
+def get_workload():
+    data = load_json(WORKLOAD_FILE, {"projects": [], "matrix": {}})
+    return data
+
+@app.post("/api/workload")
+def save_workload(data: WorkloadData):
+    with open(WORKLOAD_FILE, "w", encoding="utf-8") as f:
+        json.dump(data.dict(), f, indent=2)
+    return {"message": "Workload data saved successfully."}
 
 if __name__ == "__main__":
     import uvicorn
