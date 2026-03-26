@@ -767,13 +767,8 @@
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-700 mb-1">Supervisor</label>
-                        <select id="target-supervisor" class="w-full p-2 border border-gray-200 rounded-md bg-gray-50 text-xs focus:ring-2 focus:ring-blue-500 outline-none">
-                            <option value="">Pilih Supervisor</option>
-                        </select>
-                    </div>
-   <input type="number" id="input-target" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Target</label>
+                    <input type="number" id="input-target" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Capaian Aktual</label>
@@ -781,8 +776,15 @@
                 </div>
             </div>
             <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Kendala (Jika target tidak tercapai)</label>
+                <textarea id="input-kendala" placeholder="Sebutkan kendala atau alasan..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none h-20"></textarea>
+            </div>
+            <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Supervisor / Reviewer</label>
-                <input type="text" id="input-supervisor" placeholder="Nama Supervisor" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+                <select id="target-supervisor" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none">
+                    <option value="">-- Pilih Supervisor --</option>
+                </select>
+                <input type="hidden" id="input-supervisor">
             </div>
         </div>
         <div class="bg-slate-50 px-6 py-4 border-t border-slate-100 flex justify-end gap-3">
@@ -1121,13 +1123,14 @@
         document.getElementById('input-project').value = '';
         document.getElementById('input-date').value = dateStr || getLocalToday();
         document.getElementById('input-desc').value = '';
-        document.getElementById('input-target').value = 100;
+        document.getElementById('input-target').value = 0;
         document.getElementById('input-achievement').value = 0;
-        // document.getElementById('input-supervisor').value = currentUser?.supervisor_name || ''; // Old text input
-        document.getElementById('target-supervisor').value = currentUser?.supervisor_name || ''; // New select input
+        document.getElementById('input-kendala').value = '';
+        document.getElementById('target-supervisor').value = currentUser?.supervisor_name || '';
         document.getElementById('input-category').value = 'Lainnya';
 
         document.getElementById('modal-target').classList.remove('hidden');
+        document.getElementById('modal-target').classList.add('flex');
     }
     
     window.openEditPerformanceModal = async function(id) {
@@ -1157,8 +1160,8 @@
         document.getElementById('input-desc').value = item.target_description || '';
         document.getElementById('input-target').value = item.daily_target || 0;
         document.getElementById('input-achievement').value = item.daily_performance || 0;
-        // document.getElementById('input-supervisor').value = item.supervisor_name || ''; // Old text input
-        document.getElementById('target-supervisor').value = item.supervisor_name || ''; // New select input
+        document.getElementById('input-kendala').value = item.kendala || '';
+        document.getElementById('target-supervisor').value = item.supervisor_name || '';
 
         const btnSubmit = document.getElementById('btn-submit-target');
         if (isPrivileged || (currentUser && item.employee_name === currentUser.employee_name && item.status === 'pending')) {
@@ -1167,6 +1170,7 @@
             btnSubmit.classList.add('hidden');
         }
         document.getElementById('modal-target').classList.remove('hidden');
+        document.getElementById('modal-target').classList.add('flex');
     }
 
     window.closeTargetModal = function() {
@@ -1190,7 +1194,8 @@
             daily_performance: parseFloat(document.getElementById('input-achievement').value) || 0,
             achievement_percent: 0,
             supervisor_name: document.getElementById('target-supervisor').value,
-            status: "pending"
+            status: "pending",
+            kendala: document.getElementById('input-kendala').value || ''
         };
         
         if(payload.daily_target > 0) {
@@ -2381,7 +2386,10 @@
                 </td>
                 <td class="p-3 text-xs text-slate-600 font-medium">${item.work_date}</td>
                 <td class="p-3"><span class="px-2 py-1 bg-surface-container-low text-slate-700 text-[10px] font-bold rounded">${item.project_title}</span></td>
-                <td class="p-3 text-xs text-slate-600"><p class="line-clamp-2">${item.target_description}</p></td>
+                <td class="p-3 text-xs text-slate-600">
+                    <p class="line-clamp-2">${item.target_description}</p>
+                    ${item.kendala ? `<p class="mt-1 text-[10px] text-red-500 italic font-bold">Kendala: ${item.kendala}</p>` : ''}
+                </td>
                 <td class="p-3 text-xs font-bold text-slate-800 text-right">${item.daily_target}</td>
                 <td class="p-3 text-xs font-bold text-emerald-600 text-right">${item.daily_performance}</td>
                 <td class="p-3">

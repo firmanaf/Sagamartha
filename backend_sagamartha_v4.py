@@ -58,6 +58,7 @@ class PerformanceRecord(BaseModel):
     achievement_percent: float
     supervisor_name: Optional[str] = ""
     status: str = "pending"
+    kendala: Optional[str] = ""
 
 class AgendaRecord(BaseModel):
     id: str
