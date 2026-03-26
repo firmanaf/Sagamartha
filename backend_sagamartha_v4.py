@@ -418,17 +418,6 @@ def delete_checking(checking_id: str):
         json.dump(records, f, indent=2)
     return {"message": "Checking record deleted."}
 
-
-@app.get('/api/emergency-reset-firman')
-def emergency_reset():
-    users = load_json(USERS_FILE, [])
-    for u in users:
-        if u['username'] == 'firman':
-            u['password'] = hashlib.sha256('123456'.encode('utf-8')).hexdigest()
-    with open(USERS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(users, f, indent=2)
-    return 'OK'
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
