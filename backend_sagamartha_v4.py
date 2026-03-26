@@ -352,9 +352,17 @@ def approve_overtime(record_id: str, manager_approval: str, comments: Optional[s
 @app.get("/api/workload")
 def get_workload(month: str = None):
     # Returns workload for a specific month (YYYY-MM). 
-    # If not found, attempts to copy from the most recent previous month.
     all_data = load_json(WORKLOAD_FILE, {})
     
+    # MIGRATION: If old format detected (projects/matrix keys at root), move to current month
+    if "projects" in all_data and "matrix" in all_data:
+        from datetime import datetime
+        curr_month = datetime.now().strftime("%Y-%m")
+        old_data = {"projects": all_data["projects"], "matrix": all_data["matrix"]}
+        all_data = { curr_month: old_data }
+        with open(WORKLOAD_FILE, "w", encoding="utf-8") as f:
+            json.dump(all_data, f, indent=2)
+            
     if not month:
         from datetime import datetime
         month = datetime.now().strftime("%Y-%m")
@@ -363,10 +371,10 @@ def get_workload(month: str = None):
         return all_data[month]
     
     # Copy-on-access logic for new months
-    sorted_months = sorted(all_data.keys(), reverse=True)
+    sorted_months = sorted([m for m in all_data.keys() if "-" in m], reverse=True)
     for m in sorted_months:
         if m < month:
-            # Found a previous month, return it as a template (caller will save it later)
+            # Found a previous month, return it as a template
             return all_data[m]
             
     return {"projects": [], "matrix": {}}
