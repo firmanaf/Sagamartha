@@ -1842,7 +1842,11 @@
         // 1. Calculate General Project Completion Score % (This Month)
         const monthPerformance = allPerformanceData.filter(d => d.work_date && d.work_date.startsWith(currentMonth));
         const totalAchievement = monthPerformance.length > 0 
-            ? monthPerformance.reduce((acc, curr) => acc + (curr.achievement_percent || 0), 0) / monthPerformance.length 
+            ? monthPerformance.reduce((acc, curr) => {
+                const val = curr.achievement_percent || 0;
+                const factor = (curr.status === 'approved') ? 1.0 : 0.3;
+                return acc + (val * factor);
+            }, 0) / monthPerformance.length 
             : 0;
         
         const scoreEl = document.getElementById('dash-completion-score');
@@ -1951,7 +1955,15 @@
         const currentMonth = new Date().toISOString().substring(0, 7);
         const logs = allPerformanceData.filter(d => d.employee_name === name && d.work_date && d.work_date.startsWith(currentMonth));
         if (logs.length === 0) return 0;
-        return logs.reduce((acc, curr) => acc + (curr.achievement_percent || 0), 0) / logs.length;
+        
+        // Revised Logic: Approved = 100%, Others = 30% [Revision 6.3]
+        const totalAdjusted = logs.reduce((acc, curr) => {
+            const val = curr.achievement_percent || 0;
+            const factor = (curr.status === 'approved') ? 1.0 : 0.3;
+            return acc + (val * factor);
+        }, 0);
+
+        return totalAdjusted / logs.length;
     }
 
     function calculateAttendanceDiligenceScore(name, month) {
