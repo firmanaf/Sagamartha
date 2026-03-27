@@ -1868,7 +1868,11 @@
             }
 
             const perfScore = monthLogs.length > 0 
-                ? monthLogs.reduce((acc, curr) => acc + (curr.achievement_percent || 0), 0) / monthLogs.length 
+                ? monthLogs.reduce((acc, curr) => {
+                    const val = curr.achievement_percent || 0;
+                    const factor = (curr.status === 'approved') ? 1.0 : 0.3;
+                    return acc + (val * factor);
+                }, 0) / monthLogs.length 
                 : 0;
             
             const attScore = calculateAttendanceDiligenceScore(user.employee_name, currentMonth);
