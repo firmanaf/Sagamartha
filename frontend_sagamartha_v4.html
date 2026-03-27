@@ -334,19 +334,19 @@
         <div class="flex items-center gap-3">
             <div class="flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span class="text-[9px] font-bold text-slate-400 uppercase">Performa (50%)</span>
+                <span class="text-[9px] font-bold text-slate-400 uppercase">Performa (30%)</span>
             </div>
             <div class="flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
-                <span class="text-[9px] font-bold text-slate-400 uppercase">Absensi (20%)</span>
+                <span class="text-[9px] font-bold text-slate-400 uppercase">Absensi (35%)</span>
             </div>
             <div class="flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                <span class="text-[9px] font-bold text-slate-400 uppercase">Beban (20%)</span>
+                <span class="text-[9px] font-bold text-slate-400 uppercase">Beban (30%)</span>
             </div>
             <div class="flex items-center gap-1.5">
                 <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-                <span class="text-[9px] font-bold text-slate-400 uppercase">Target (10%)</span>
+                <span class="text-[9px] font-bold text-slate-400 uppercase">Target (5%)</span>
             </div>
         </div>
     </div>
@@ -1896,8 +1896,8 @@
             const normWorkload = (s.workload / maxWorkload) * 100;
             const normTargets = (s.targetSum / maxTargets) * 100;
             
-            // Weights: Performa (50%), Attendance (20%), Workload (20%), Target (10%)
-            const combined = (normPerf * 0.5) + (s.att * 0.2) + (normWorkload * 0.2) + (normTargets * 0.1);
+            // New Weights: Performa (30%), Attendance (35%), Beban (30%), Target (5%) [Revision 6.5]
+            const combined = (normPerf * 0.3) + (s.att * 0.35) + (normWorkload * 0.3) + (normTargets * 0.05);
             
             return {
                 ...s,
