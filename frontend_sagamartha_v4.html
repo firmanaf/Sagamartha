@@ -1867,39 +1867,41 @@
                 });
             }
 
-            const perfScore = monthLogs.length > 0 
-                ? monthLogs.reduce((acc, curr) => {
-                    const val = curr.achievement_percent || 0;
-                    const factor = (curr.status === 'approved') ? 1.0 : 0.3;
-                    return acc + (val * factor);
-                }, 0) / monthLogs.length 
-                : 0;
+            // Option 1: Accumulated Achievement [Revision 6.4]
+            const totalPerfUnits = monthLogs.reduce((acc, curr) => {
+                const baseVal = (curr.daily_target || 0) * (curr.achievement_percent || 0) / 100;
+                const factor = (curr.status === 'approved') ? 1.0 : 0.3;
+                return acc + (baseVal * factor);
+            }, 0);
             
             const attScore = calculateAttendanceDiligenceScore(user.employee_name, currentMonth);
 
             return {
                 name: user.employee_name,
                 username: user.username,
-                perf: perfScore,
+                perfUnits: totalPerfUnits,
                 att: attScore,
                 workload: sumBeban,
                 targetSum: monthLogs.reduce((acc, curr) => acc + (curr.daily_target || 0), 0)
             };
         });
 
-        // Normalization
+        // Normalization [Revision 6.4]
+        const maxPerfUnits = Math.max(0.1, ...rawStats.map(s => s.perfUnits));
         const maxWorkload = Math.max(1, ...rawStats.map(s => s.workload));
         const maxTargets = Math.max(0.1, ...rawStats.map(s => s.targetSum));
 
         const rankingData = rawStats.map(s => {
+            const normPerf = (s.perfUnits / maxPerfUnits) * 100;
             const normWorkload = (s.workload / maxWorkload) * 100;
             const normTargets = (s.targetSum / maxTargets) * 100;
             
-            // Weights: Achievement (50%), Attendance (20%), Workload (20%), Target Count (10%)
-            const combined = (s.perf * 0.5) + (s.att * 0.2) + (normWorkload * 0.2) + (normTargets * 0.1);
+            // Weights: Performa (50%), Attendance (20%), Workload (20%), Target (10%)
+            const combined = (normPerf * 0.5) + (s.att * 0.2) + (normWorkload * 0.2) + (normTargets * 0.1);
             
             return {
                 ...s,
+                perfNorm: normPerf,
                 combined: combined,
                 initials: s.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
             };
@@ -1938,7 +1940,7 @@
                         <div>
                             <p class="text-sm font-bold text-slate-800">${item.name}</p>
                             <div class="flex items-center gap-2 mt-1">
-                                <span class="text-[8px] font-bold text-emerald-600 px-1.5 py-0.5 bg-emerald-50 rounded">${item.perf.toFixed(0)}% Perf</span>
+                                <span class="text-[8px] font-bold text-emerald-600 px-1.5 py-0.5 bg-emerald-50 rounded">${item.perfNorm.toFixed(0)}% Perf</span>
                                 <span class="text-[8px] font-bold text-cyan-600 px-1.5 py-0.5 bg-cyan-50 rounded">${item.att.toFixed(0)}% Att</span>
                                 <span class="text-[8px] font-bold text-amber-600 px-1.5 py-0.5 bg-amber-50 rounded">${item.workload} Beban</span>
                                 <span class="text-[8px] font-bold text-indigo-600 px-1.5 py-0.5 bg-indigo-50 rounded">${item.targetSum.toFixed(1)} Target</span>
