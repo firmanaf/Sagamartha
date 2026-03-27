@@ -1883,17 +1883,17 @@
                 perf: perfScore,
                 att: attScore,
                 workload: sumBeban,
-                targetCount: monthLogs.length
+                targetSum: monthLogs.reduce((acc, curr) => acc + (curr.daily_target || 0), 0)
             };
         });
 
         // Normalization
         const maxWorkload = Math.max(1, ...rawStats.map(s => s.workload));
-        const maxTargets = Math.max(1, ...rawStats.map(s => s.targetCount));
+        const maxTargets = Math.max(0.1, ...rawStats.map(s => s.targetSum));
 
         const rankingData = rawStats.map(s => {
             const normWorkload = (s.workload / maxWorkload) * 100;
-            const normTargets = (s.targetCount / maxTargets) * 100;
+            const normTargets = (s.targetSum / maxTargets) * 100;
             
             // Weights: Achievement (50%), Attendance (20%), Workload (20%), Target Count (10%)
             const combined = (s.perf * 0.5) + (s.att * 0.2) + (normWorkload * 0.2) + (normTargets * 0.1);
@@ -1941,7 +1941,7 @@
                                 <span class="text-[8px] font-bold text-emerald-600 px-1.5 py-0.5 bg-emerald-50 rounded">${item.perf.toFixed(0)}% Perf</span>
                                 <span class="text-[8px] font-bold text-cyan-600 px-1.5 py-0.5 bg-cyan-50 rounded">${item.att.toFixed(0)}% Att</span>
                                 <span class="text-[8px] font-bold text-amber-600 px-1.5 py-0.5 bg-amber-50 rounded">${item.workload} Beban</span>
-                                <span class="text-[8px] font-bold text-indigo-600 px-1.5 py-0.5 bg-indigo-50 rounded">${item.targetCount} Target</span>
+                                <span class="text-[8px] font-bold text-indigo-600 px-1.5 py-0.5 bg-indigo-50 rounded">${item.targetSum.toFixed(1)} Target</span>
                             </div>
                         </div>
                     </div>
