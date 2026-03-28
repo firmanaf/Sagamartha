@@ -3296,6 +3296,120 @@
         let officeJoyActive = false, officeJoyPos = {x: 0, y: 0}, officePrevTouchX = null;
         window.officeSimInitialized = false;
 
+        function initOfficeSim() {
+            const canvasContainer = document.getElementById('office-canvas-container');
+            if(!canvasContainer) return;
+
+            officeScene = new THREE.Scene();
+            officeScene.background = new THREE.Color(0x0f172a); 
+            officeScene.fog = new THREE.Fog(0x0f172a, 5, 40);
+
+            officeCamera = new THREE.PerspectiveCamera(75, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
+            officeCamera.position.set(0, 1.6, 5);
+
+            officeRenderer = new THREE.WebGLRenderer({ antialias: true });
+            officeRenderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            officeRenderer.shadowMap.enabled = true;
+            canvasContainer.appendChild(officeRenderer.domElement);
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4); 
+            officeScene.add(ambient);
+            const sun = new THREE.DirectionalLight(0x00f2ff, 0.8);
+            sun.position.set(10, 20, 10);
+            sun.castShadow = true;
+            officeScene.add(sun);
+
+            createOfficeEnvironment();
+            createSagaCharacters();
+
+            // Controls
+            document.addEventListener('keydown', e => { 
+                if(document.activeElement.tagName === 'INPUT') return;
+                officeKeys[e.key.toLowerCase()] = true; 
+                if(e.key.toLowerCase() === 'e' && officeNearbyChar && !officeCurrentChar) openOfficeDialogue(officeNearbyChar);
+            });
+            document.addEventListener('keyup', e => officeKeys[e.key.toLowerCase()] = false);
+            
+            document.addEventListener('pointerlockchange', () => {
+                const overlay = document.getElementById('office-start-overlay');
+                if (document.pointerLockElement !== officeRenderer.domElement) {
+                    if(!officeCurrentChar) overlay.classList.remove('opacity-0', 'pointer-events-none');
+                } else {
+                    overlay.classList.add('opacity-0', 'pointer-events-none');
+                }
+            });
+
+            document.addEventListener('mousemove', e => {
+                if(document.pointerLockElement === officeRenderer.domElement) {
+                    officeMouseX -= e.movementX * 0.0015;
+                }
+            });
+
+            // Touch support
+            const container = document.getElementById('office-canvas-container');
+            container.addEventListener('touchstart', e => { officePrevTouchX = e.touches[0].clientX; });
+            container.addEventListener('touchmove', e => {
+                if (officeCurrentChar) return;
+                const touchX = e.touches[0].clientX;
+                if (officePrevTouchX !== null) officeMouseX -= (touchX - officePrevTouchX) * 0.005;
+                officePrevTouchX = touchX;
+            });
+
+            // Joystick Logic
+            const joyContainer = document.getElementById('office-joystick-container');
+            const joyHandle = document.getElementById('office-joystick-handle');
+            joyContainer.addEventListener('touchstart', e => { officeJoyActive = true; moveJoy(e); });
+            joyContainer.addEventListener('touchmove', e => { if(officeJoyActive) moveJoy(e); });
+            joyContainer.addEventListener('touchend', () => { 
+                officeJoyActive = false; 
+                joyHandle.style.transform = `translate(0px, 0px)`;
+                officeKeys['w'] = false; officeKeys['s'] = false;
+            });
+
+            function moveJoy(e) {
+                const rect = joyContainer.getBoundingClientRect();
+                const tx = e.touches[0].clientX - (rect.left + rect.width/2);
+                const ty = e.touches[0].clientY - (rect.top + rect.height/2);
+                const dist = Math.min(Math.sqrt(tx*tx + ty*ty), rect.width/2);
+                const angle = Math.atan2(ty, tx);
+                const nx = Math.cos(angle) * dist;
+                const ny = Math.sin(angle) * dist;
+                joyHandle.style.transform = `translate(${nx}px, ${ny}px)`;
+                officeKeys['w'] = ny < -10; officeKeys['s'] = ny > 10;
+            }
+
+            document.addEventListener('wheel', e => {
+                if(!window.officeSimInitialized || document.getElementById('view-office').classList.contains('hidden')) return;
+                const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), officeMouseX);
+                officeCamera.position.add(forward.multiplyScalar(e.deltaY < 0 ? 2 : -2));
+            });
+
+            const mcanvas = document.getElementById('office-minimap');
+            mcanvas.addEventListener('mousedown', e => {
+                const rect = mcanvas.getBoundingClientRect();
+                officeCamera.position.set(((e.clientX - rect.left) / rect.width - 0.5) * 200, 1.6, ((e.clientY - rect.top) / rect.height - 0.5) * 200);
+            });
+
+            window.officeSimInitialized = true;
+            requestAnimationFrame(animateOffice);
+        }
+
+        window.openPersonaModal = function() {
+            if(!currentUser) return alert('Silakan login.');
+            document.getElementById('input-persona').value = localStorage.getItem(`saga_office_persona_${currentUser.username}`) || "";
+            document.getElementById('modal-persona').classList.remove('hidden');
+        };
+        window.closePersonaModal = () => document.getElementById('modal-persona').classList.add('hidden');
+        window.savePersona = () => {
+            const v = document.getElementById('input-persona').value;
+            localStorage.setItem(`saga_office_persona_${currentUser.username}`, v);
+            officeCharacters.forEach(c => { if(c.userData.username === currentUser.username) c.userData.lines[0] = v; });
+            closePersonaModal();
+            alert('Status diupdate!');
+        };
+        window.requestOfficeControl = () => { if(officeRenderer && !officeCurrentChar) officeRenderer.domElement.requestPointerLock(); };
+
         function createOfficeEnvironment() {
             // Floor (Lighter, higher contrast)
             const floorSize = 300;
@@ -3517,14 +3631,6 @@
                 }
             }
 
-            // Arrow keys support
-            if(officeKeys['arrowup']) officeCamera.position.add(forward.multiplyScalar(speed));
-            if(officeKeys['arrowdown']) officeCamera.position.sub(forward.multiplyScalar(speed));
-            if(officeKeys['arrowleft']) officeCamera.position.sub(side.multiplyScalar(speed));
-            if(officeKeys['arrowright']) officeCamera.position.add(side.multiplyScalar(speed));
-            if(officeKeys['a']) officeCamera.position.sub(side.multiplyScalar(speed));
-            if(officeKeys['d']) officeCamera.position.add(side.multiplyScalar(speed));
-
             officeCamera.rotation.y = officeMouseX;
             officeCamera.position.y = 1.6 + Math.sin(time * 0.005) * 0.02;
 
@@ -3552,13 +3658,20 @@
                 }
 
                 // Breathing/Floating
-                c.children.find(child => child.type === 'Mesh' && child.geometry.type === 'CylinderGeometry').position.y = 0.75 + Math.sin(time * 0.003) * 0.05;
+                const bodyMesh = c.children.find(child => child.type === 'Mesh' && child.geometry.type === 'CylinderGeometry');
+                if(bodyMesh) bodyMesh.position.y = 0.75 + Math.sin(time * 0.003) * 0.05;
                 
                 // Badge floating
                 const badge = c.children.find(child => child.type === 'Sprite');
-                if(badge) badge.position.y = 2.2 + Math.sin(time * 0.003) * 0.05;
+                if(badge) badge.position.y = 2.4 + Math.sin(time * 0.003) * 0.05;
             });
 
+            // Nearby check
+            officeNearbyChar = null;
+            officeCharacters.forEach(c => {
+                const dist = officeCamera.position.distanceTo(c.position);
+                if(dist < 3) officeNearbyChar = c;
+            });
 
             const prompt = document.getElementById('office-interaction-prompt');
             if(officeNearbyChar && !officeCurrentChar) {
@@ -3568,8 +3681,78 @@
                 prompt.classList.add('hidden');
             }
 
+            updateOfficeMinimap();
             officeRenderer.render(officeScene, officeCamera);
             requestAnimationFrame(animateOffice);
+        }
+
+        function updateOfficeMinimap() {
+            const canvas = document.getElementById('office-minimap');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            const radius = w / 2;
+            
+            ctx.save();
+            // CLIP: Circular Radar Boundary
+            ctx.beginPath();
+            ctx.arc(radius, radius, radius, 0, Math.PI * 2);
+            ctx.clip();
+
+            // Draw background
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, w, h);
+            
+            // Radar Rings
+            ctx.strokeStyle = 'rgba(34, 211, 238, 0.15)';
+            ctx.lineWidth = 1;
+            [0.3, 0.6, 0.9].forEach(r => {
+                ctx.beginPath(); ctx.arc(radius, radius, radius * r, 0, Math.PI*2); ctx.stroke();
+            });
+
+            const scale = w / 200; 
+            const cx = radius, cz = radius;
+
+            // Sectors label areas
+            ctx.font = 'bold 8px Orbitron, sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.textAlign = 'center';
+            ctx.fillText('DIREKSI', cx, cz - 15*scale);
+            ctx.fillText('PETA', cx - 35*scale, cz - 25*scale);
+            ctx.fillText('TEKNIS', cx + 35*scale, cz - 25*scale);
+            ctx.fillText('ADM', cx, cz + 40*scale);
+
+            // Staff dots
+            officeCharacters.forEach(c => {
+                const mx = cx + c.position.x * scale;
+                const mz = cz + c.position.z * scale;
+                ctx.fillStyle = (c.userData.role === 'Direksi') ? '#facc15' : 'rgba(100, 116, 139, 0.8)';
+                ctx.beginPath(); ctx.arc(mx, mz, 2, 0, Math.PI*2); ctx.fill();
+            });
+
+            // Player dot
+            const px = cx + officeCamera.position.x * scale;
+            const pz = cz + officeCamera.position.z * scale;
+            
+            // Camera cone
+            ctx.beginPath();
+            ctx.moveTo(px, pz);
+            const vd = 20;
+            ctx.lineTo(px + Math.sin(officeMouseX+Math.PI+0.4)*vd, pz + Math.cos(officeMouseX+Math.PI+0.4)*vd);
+            ctx.lineTo(px + Math.sin(officeMouseX+Math.PI-0.4)*vd, pz + Math.cos(officeMouseX+Math.PI-0.4)*vd);
+            ctx.fillStyle = 'rgba(34, 211, 238, 0.3)';
+            ctx.fill();
+
+            ctx.fillStyle = '#22d3ee';
+            ctx.beginPath(); ctx.arc(px, pz, 4, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+            
+            ctx.restore();
+            
+            // Radar Border Glow
+            ctx.strokeStyle = 'rgba(34, 211, 238, 0.3)';
+            ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.arc(radius, radius, radius - 2, 0, Math.PI*2); ctx.stroke();
         }
 
         function openOfficeDialogue(char) {
