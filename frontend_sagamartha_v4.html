@@ -563,15 +563,26 @@
         <!-- Three.js will inject canvas here -->
     </div>
     
+    <!-- Click to Start Overlay -->
+    <div id="office-start-overlay" onclick="requestOfficeControl()" class="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center cursor-pointer group z-50 transition-all duration-500">
+        <div class="bg-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-3 active:scale-95 transition-all hover:bg-cyan-50">
+            <span class="material-symbols-outlined text-primary group-hover:animate-pulse">mouse</span>
+            <span class="font-bold text-slate-800 uppercase tracking-tight">Klik untuk Mulai & Gerak</span>
+        </div>
+    </div>
+    
     <!-- Office HUD -->
-    <div id="office-ui-overlay" class="absolute top-6 left-6 p-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl text-white pointer-events-none max-w-[280px]">
-        <h2 class="text-xl font-headline font-extrabold tracking-tighter text-white uppercase mb-1">Virtual HQ</h2>
-        <p class="text-[10px] text-cyan-300 font-bold uppercase tracking-widest mb-3">Sagamartha Digital Twin</p>
-        <div class="space-y-2 text-[11px] font-medium text-white/80">
-            <p class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> WASD to explore</p>
-            <p class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> Mouse to look around</p>
-            <p class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Press E to talk</p>
-            <p class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-indigo-400"></span> Space to celebrate</p>
+    <div id="office-ui-overlay" class="absolute top-6 left-6 p-6 bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl text-white pointer-events-none max-w-[280px] shadow-2xl z-[60]">
+        <h2 class="text-xl font-headline font-extrabold tracking-tighter text-cyan-400 uppercase mb-1">Digital Twin HQ</h2>
+        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4">Sagamartha HR Enterprise</p>
+        <div class="space-y-3 text-[11px] font-semibold text-slate-200">
+            <p class="flex items-center gap-3"><span class="w-5 h-5 flex items-center justify-center rounded-md bg-slate-800 text-[10px] text-emerald-400 border border-emerald-400/20 shadow-[0_0_10px_rgba(52,211,153,0.1)]">W</span> Maju</p>
+            <p class="flex items-center gap-3"><span class="w-5 h-5 flex items-center justify-center rounded-md bg-slate-800 text-[10px] text-emerald-400 border border-emerald-400/20">A</span> Kiri</p>
+            <p class="flex items-center gap-3"><span class="w-5 h-5 flex items-center justify-center rounded-md bg-slate-800 text-[10px] text-emerald-400 border border-emerald-400/20">S</span> Mundur</p>
+            <p class="flex items-center gap-3"><span class="w-5 h-5 flex items-center justify-center rounded-md bg-slate-800 text-[10px] text-emerald-400 border border-emerald-400/20">D</span> Kanan</p>
+            <div class="h-px bg-slate-700/50 my-2"></div>
+            <p class="flex items-center gap-2"><span class="material-symbols-outlined text-sm text-cyan-400">mouse_away</span> Gerakan Kamera: Mouse</p>
+            <p class="flex items-center gap-2"><span class="material-symbols-outlined text-sm text-amber-400">chat_bubble</span> Bicara ke Karakter: [E]</p>
         </div>
     </div>
 
@@ -3232,8 +3243,8 @@
             if(!container) return;
 
             officeScene = new THREE.Scene();
-            officeScene.background = new THREE.Color(0xf1f5f9);
-            officeScene.fog = new THREE.Fog(0xf1f5f9, 5, 40);
+            officeScene.background = new THREE.Color(0x0f172a); // Dark background for contrast
+            officeScene.fog = new THREE.Fog(0x0f172a, 5, 40);
 
             officeCamera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
             officeCamera.position.set(0, 1.6, 5);
@@ -3244,9 +3255,9 @@
             container.appendChild(officeRenderer.domElement);
 
             // Lighting
-            const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4); // Softer ambient
             officeScene.add(ambient);
-            const sun = new THREE.DirectionalLight(0xffffff, 0.5);
+            const sun = new THREE.DirectionalLight(0x00f2ff, 0.8); // Cyan-tinted directional light
             sun.position.set(10, 20, 10);
             sun.castShadow = true;
             officeScene.add(sun);
@@ -3266,12 +3277,13 @@
             });
             document.addEventListener('keyup', e => officeKeys[e.key.toLowerCase()] = false);
             
-            officeRenderer.domElement.addEventListener('click', () => {
-                if(!officeCurrentChar) officeRenderer.domElement.requestPointerLock();
-            });
-            document.addEventListener('mousemove', e => {
-                if(document.pointerLockElement === officeRenderer.domElement) {
-                    officeMouseX += e.movementX * 0.002;
+            // Handle pointer lock changes to show/hide the start overlay
+            document.addEventListener('pointerlockchange', () => {
+                const overlay = document.getElementById('office-start-overlay');
+                if (document.pointerLockElement !== officeRenderer.domElement) {
+                    if(!officeCurrentChar) overlay.classList.remove('opacity-0', 'pointer-events-none');
+                } else {
+                    overlay.classList.add('opacity-0', 'pointer-events-none');
                 }
             });
 
@@ -3279,18 +3291,24 @@
             requestAnimationFrame(animateOffice);
         }
 
+        window.requestOfficeControl = function() {
+            if(officeRenderer && !officeCurrentChar) {
+                officeRenderer.domElement.requestPointerLock();
+            }
+        };
+
         function createOfficeEnvironment() {
             // Floor
             const floor = new THREE.Mesh(
-                new THREE.PlaneGeometry(50, 50),
-                new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.8 })
+                new THREE.PlaneGeometry(100, 100),
+                new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.2 })
             );
             floor.rotation.x = -Math.PI / 2;
             floor.receiveShadow = true;
             officeScene.add(floor);
 
-            // Grid pattern
-            const grid = new THREE.GridHelper(50, 50, 0xcbd5e1, 0xf1f5f9);
+            // Grid pattern (Vibrant Cyan)
+            const grid = new THREE.GridHelper(100, 100, 0x0ea5e9, 0x0f172a);
             grid.position.y = 0.01;
             officeScene.add(grid);
 
