@@ -3287,6 +3287,12 @@
                 }
             });
 
+            document.addEventListener('mousemove', e => {
+                if(document.pointerLockElement === officeRenderer.domElement) {
+                    officeMouseX -= e.movementX * 0.0015; // Adjusted sensitivity
+                }
+            });
+
             window.officeSimInitialized = true;
             requestAnimationFrame(animateOffice);
         }
@@ -3307,10 +3313,13 @@
             floor.receiveShadow = true;
             officeScene.add(floor);
 
-            // Grid pattern (Vibrant Cyan)
+            // Grid pattern (Vibrant Cyan with Pulse)
             const grid = new THREE.GridHelper(100, 100, 0x0ea5e9, 0x0f172a);
             grid.position.y = 0.01;
+            grid.material.transparent = true;
+            grid.material.opacity = 0.5;
             officeScene.add(grid);
+            window.officeGrid = grid;
 
             // Desks (Simplified)
             for(let x = -15; x <= 15; x += 10) {
@@ -3341,38 +3350,81 @@
         }
 
         function createSagaCharacters() {
+            const stats = getOfficeStats();
+            
             // Dimas (Peta)
-            officeCharacters.push(createCharMesh("Dimas", "Head of Peta", -5, -5, 0x10b981, [
-                "Halo! Saya Dimas dari tim Peta. Sedang memantau progres survey GIS hari ini.",
-                "Data spasial kita semakin akurat. Pastikan semua koordinat sudah masuk sistem ya!",
-                "Ingin melihat statistik pemetaan terbaru? Bisa cek di tab 'Beban Proyek'."
-            ]));
+            officeCharacters.push(createCharMesh("Dimas", "Head of Peta", -5, -8, 0x10b981, [
+                `Halo! Saya Dimas. Saat ini ada ${stats.totalTargets} target survey di sistem.`,
+                "Data spasial kita terus diperbarui secara real-time.",
+                "Top performer bulan ini sedang kami review untuk bonus insentif."
+            ], `📊 ${stats.totalTargets} Targets`));
             
             // Karin (Administrasi & HR)
-            officeCharacters.push(createCharMesh("Karin", "Administrasi & HR", 5, -5, 0x0ea5e9, [
-                "Selamat datang di HQ! Saya Karin. Urusan absensi dan lembur aman?",
-                "Jangan lupa isi target harian ya, supaya metrics performa kamu tetap hijau.",
-                "Saga Metrics versi 4 ini jauh lebih cepat sinkronisasinya."
-            ]));
+            officeCharacters.push(createCharMesh("Karin", "Administrasi & HR", 5, -8, 0x0ea5e9, [
+                `Selamat datang! Saya Karin. Kami mengelola ${stats.totalUsers} personil aktif.`,
+                "Pastikan presensi tim Anda sudah tervalidasi sebelum jam 5 sore.",
+                "Budaya kerja Sagamartha mengutamakan akurasi dan integritas."
+            ], `👥 ${stats.totalUsers} Staff`));
 
             // Fiko (Teknis)
-            officeCharacters.push(createCharMesh("Fiko", "Technical Lead", 0, -12, 0x6366f1, [
-                "Server dalam kondisi optimal. Algoritma weighted scoring sudah saya update semalam.",
-                "P=NP? Selama database kita index-nya bener, itu bukan masalah utama hari ini.",
-                "Sistem survey mobile sedang rilis update baru, cek playstore ya."
-            ]));
+            officeCharacters.push(createCharMesh("Fiko", "Technical Lead", 0, -15, 0x6366f1, [
+                `Sistem operasional normal. Sinkronisasi multi-target v4 stabil.`,
+                "Kami sedang mengoptimalkan algoritma weighted scoring dashboard.",
+                "Cek status API di panel pengaturan jika Anda merasa ada kendala koneksi."
+            ], "⚡ System Active"));
         }
 
-        function createCharMesh(name, role, x, z, color, lines) {
+        function getOfficeStats() {
+            return {
+                totalTargets: (window.allCheckings || []).length,
+                totalUsers: (window.allUsers || []).length,
+                todayDate: new Date().toLocaleDateString('id-ID')
+            };
+        }
+
+        function createCharMesh(name, role, x, z, color, lines, badgeText) {
             const group = new THREE.Group();
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.5, 8), new THREE.MeshStandardMaterial({ color: color }));
+            
+            // Glowing Base Ring
+            const ringGeom = new THREE.RingGeometry(0.5, 0.6, 32);
+            const ringMat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+            const ring = new THREE.Mesh(ringGeom, ringMat);
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.y = 0.05;
+            group.add(ring);
+            
+            // Body
+            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.5, 8), new THREE.MeshStandardMaterial({ color: color, emissive: color, emissiveIntensity: 0.2 }));
             body.position.y = 0.75;
             body.castShadow = true;
             group.add(body);
             
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), new THREE.MeshStandardMaterial({ color: 0xffdbac }));
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffdbac }));
             head.position.y = 1.6;
             group.add(head);
+
+            // Floating Badge (Sprite)
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+            ctx.roundRect(0, 0, 256, 64, 10);
+            ctx.fill();
+            ctx.strokeStyle = `rgba(${color >> 16 & 255}, ${color >> 8 & 255}, ${color & 255}, 0.5)`;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 24px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(badgeText || name, 128, 40);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMat = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMat);
+            sprite.position.y = 2.2;
+            sprite.scale.set(1.5, 0.4, 1);
+            group.add(sprite);
 
             group.position.set(x, 0, z);
             group.userData = { name, role, lines, initialPos: new THREE.Vector3(x, 0, z) };
@@ -3402,10 +3454,18 @@
             officeCamera.rotation.y = officeMouseX;
             officeCamera.position.y = 1.6 + Math.sin(time * 0.005) * 0.02;
 
+            // Grid pulse effect
+            if(window.officeGrid) {
+                window.officeGrid.material.opacity = 0.2 + Math.abs(Math.sin(time * 0.001)) * 0.3;
+            }
+
             // Simple AI for chars (bouncing/floating)
             officeCharacters.forEach(c => {
                 c.position.y = Math.abs(Math.sin(time * 0.002)) * 0.1;
                 c.lookAt(officeCamera.position.x, 0, officeCamera.position.z);
+                // Badge floating
+                const badge = c.children.find(child => child.type === 'Sprite');
+                if(badge) badge.position.y = 2.2 + Math.sin(time * 0.003) * 0.05;
             });
 
             // Nearby check
@@ -3439,11 +3499,21 @@
             
             const opts = document.getElementById('office-dialogue-options');
             opts.innerHTML = '';
-            char.userData.lines.slice(1).forEach(line => {
+            
+            const questions = [
+                `Apa kabar, ${char.userData.name}?`,
+                "Ada update apa hari ini?",
+                "Bagaimana progres tim Anda?",
+                "Terima kasih atas infonya!"
+            ];
+
+            char.userData.lines.forEach((line, i) => {
                 const btn = document.createElement('button');
-                btn.className = 'text-left p-3 border border-slate-100 rounded-xl text-xs font-medium hover:border-primary hover:bg-slate-50 transition-all';
-                btn.textContent = "Apa kabar " + char.userData.name + "?";
-                btn.onclick = () => { document.getElementById('office-dialogue-text').textContent = line; };
+                btn.className = 'text-left p-3 border border-slate-100 rounded-xl text-xs font-medium hover:border-primary hover:bg-cyan-50 transition-all flex justify-between items-center group';
+                btn.innerHTML = `<span>${questions[i] || "Tanya lainnya..."}</span> <span class="material-symbols-outlined text-transparent group-hover:text-primary transition-all">chevron_right</span>`;
+                btn.onclick = () => { 
+                    document.getElementById('office-dialogue-text').textContent = line; 
+                };
                 opts.appendChild(btn);
             });
         }
