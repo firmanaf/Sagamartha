@@ -3291,182 +3291,27 @@
     <script>
         let officeScene, officeCamera, officeRenderer, officePlayer, officeCharacters = [];
         let officeKeys = {}, officeNearbyChar = null, officeCurrentChar = null;
-        let officeMouseX = 0, officeLastTime = 0;
+        let officeMouseX = 0, officeLastTime = 0, officeDesks = [];
         let officeWanderTimer = 0;
         let officeJoyActive = false, officeJoyPos = {x: 0, y: 0}, officePrevTouchX = null;
         window.officeSimInitialized = false;
 
-        function initOfficeSim() {
-            const canvasContainer = document.getElementById('office-canvas-container');
-            if(!canvasContainer) return;
-
-            officeScene = new THREE.Scene();
-            officeScene.background = new THREE.Color(0x0f172a); // Dark background for contrast
-            officeScene.fog = new THREE.Fog(0x0f172a, 5, 40);
-
-            officeCamera = new THREE.PerspectiveCamera(75, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
-            officeCamera.position.set(0, 1.6, 5);
-
-            officeRenderer = new THREE.WebGLRenderer({ antialias: true });
-            officeRenderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
-            officeRenderer.shadowMap.enabled = true;
-            canvasContainer.appendChild(officeRenderer.domElement);
-
-            // Lighting
-            const ambient = new THREE.AmbientLight(0xffffff, 0.4); // Softer ambient
-            officeScene.add(ambient);
-            const sun = new THREE.DirectionalLight(0x00f2ff, 0.8); // Cyan-tinted directional light
-            sun.position.set(10, 20, 10);
-            sun.castShadow = true;
-            officeScene.add(sun);
-
-            // Environment
-            createOfficeEnvironment();
-
-            // Characters
-            createSagaCharacters();
-
-            // Controls
-            document.addEventListener('keydown', e => { 
-                if(document.activeElement.tagName === 'INPUT') return;
-                officeKeys[e.key.toLowerCase()] = true; 
-                if(e.key.toLowerCase() === 'e' && officeNearbyChar && !officeCurrentChar) openOfficeDialogue(officeNearbyChar);
-                if(e.key === ' ' && !officeCurrentChar) celebrate();
-            });
-            document.addEventListener('keyup', e => officeKeys[e.key.toLowerCase()] = false);
-            
-            // Handle pointer lock changes to show/hide the start overlay
-            document.addEventListener('pointerlockchange', () => {
-                const overlay = document.getElementById('office-start-overlay');
-                if (document.pointerLockElement !== officeRenderer.domElement) {
-                    if(!officeCurrentChar) overlay.classList.remove('opacity-0', 'pointer-events-none');
-                } else {
-                    overlay.classList.add('opacity-0', 'pointer-events-none');
-                }
-            });
-
-            document.addEventListener('mousemove', e => {
-                if(document.pointerLockElement === officeRenderer.domElement) {
-                    officeMouseX -= e.movementX * 0.0015; // Adjusted sensitivity
-                }
-            });
-
-            // Touch events for mobile
-            const container = document.getElementById('office-canvas-container');
-            container.addEventListener('touchstart', e => { officePrevTouchX = e.touches[0].clientX; });
-            container.addEventListener('touchmove', e => {
-                if (officeCurrentChar) return;
-                const touchX = e.touches[0].clientX;
-                if (officePrevTouchX !== null) {
-                    officeMouseX -= (touchX - officePrevTouchX) * 0.005;
-                }
-                officePrevTouchX = touchX;
-            });
-            container.addEventListener('touchend', () => { officePrevTouchX = null; });
-
-            // Joystick Logic
-            const joyContainer = document.getElementById('office-joystick-container');
-            const joyHandle = document.getElementById('office-joystick-handle');
-            joyContainer.addEventListener('touchstart', e => { officeJoyActive = true; moveJoystick(e); });
-            joyContainer.addEventListener('touchmove', e => { if(officeJoyActive) moveJoystick(e); });
-            joyContainer.addEventListener('touchend', () => { 
-                officeJoyActive = false; 
-                joyHandle.style.transform = `translate(0px, 0px)`;
-                officeKeys['w'] = false; officeKeys['s'] = false;
-            });
-
-            function moveJoystick(e) {
-                const rect = joyContainer.getBoundingClientRect();
-                const jcx = rect.left + rect.width/2;
-                const jcy = rect.top + rect.height/2;
-                const tx = e.touches[0].clientX;
-                const ty = e.touches[0].clientY;
-                
-                const dx = tx - jcx;
-                const dy = ty - jcy;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                const max = rect.width/2;
-                const ratio = Math.min(dist, max) / max;
-                
-                const nx = (dx/dist) * (ratio * max);
-                const ny = (dy/dist) * (ratio * max);
-                joyHandle.style.transform = `translate(${nx}px, ${ny}px)`;
-                
-                // Set movement keys
-                officeKeys['w'] = ny < -10;
-                officeKeys['s'] = ny > 10;
-            }
-
-            // Wheel movement
-            document.addEventListener('wheel', e => {
-                if(!window.officeSimInitialized || document.getElementById('view-office').classList.contains('hidden')) return;
-                const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), officeMouseX);
-                const zoomSpeed = 2;
-                if(e.deltaY < 0) officeCamera.position.add(forward.multiplyScalar(zoomSpeed));
-                else officeCamera.position.sub(forward.multiplyScalar(zoomSpeed));
-            });
-
-            // Minimap click
-            const mcanvas = document.getElementById('office-minimap');
-            mcanvas.addEventListener('mousedown', e => {
-                const rect = mcanvas.getBoundingClientRect();
-                const mx = (e.clientX - rect.left) / rect.width;
-                const my = (e.clientY - rect.top) / rect.height;
-                const worldX = (mx - 0.5) * 200;
-                const worldZ = (my - 0.5) * 200;
-                officeCamera.position.set(worldX, 1.6, worldZ);
-            });
-
-            window.officeSimInitialized = true;
-            requestAnimationFrame(animateOffice);
-        }
-
-        window.openPersonaModal = function() {
-            if(!currentUser) return alert('Silakan login terlebih dahulu.');
-            const key = `saga_office_persona_${currentUser.username}`;
-            document.getElementById('input-persona').value = localStorage.getItem(key) || "";
-            document.getElementById('modal-persona').classList.remove('hidden');
-        };
-
-        window.closePersonaModal = function() {
-            document.getElementById('modal-persona').classList.add('hidden');
-        };
-
-        window.savePersona = function() {
-            const msg = document.getElementById('input-persona').value;
-            localStorage.setItem(`saga_office_persona_${currentUser.username}`, msg);
-            closePersonaModal();
-            // Re-spawn or update characters to reflect new message
-            officeCharacters.forEach(c => {
-                if(c.userData.username === currentUser.username) {
-                    c.userData.personaMessage = msg;
-                }
-            });
-            alert('Halo dari masa depan! Pesan profil Anda sudah terupdate di Virtual Office.');
-        };
-
-        window.requestOfficeControl = function() {
-            if(officeRenderer && !officeCurrentChar) {
-                officeRenderer.domElement.requestPointerLock();
-            }
-        };
-
         function createOfficeEnvironment() {
-            // Floor
+            // Floor (Lighter, higher contrast)
             const floorSize = 300;
             const floor = new THREE.Mesh(
                 new THREE.PlaneGeometry(floorSize, floorSize),
-                new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.2 })
+                new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.3, metalness: 0.1 })
             );
             floor.rotation.x = -Math.PI / 2;
             floor.receiveShadow = true;
             officeScene.add(floor);
 
             // Grid pattern (Vibrant Cyan with Pulse)
-            const grid = new THREE.GridHelper(floorSize, 100, 0x0ea5e9, 0x0f172a);
+            const grid = new THREE.GridHelper(floorSize, 100, 0x22d3ee, 0x0f172a);
             grid.position.y = 0.01;
             grid.material.transparent = true;
-            grid.material.opacity = 0.5;
+            grid.material.opacity = 0.3;
             officeScene.add(grid);
             window.officeGrid = grid;
 
@@ -3504,12 +3349,12 @@
 
         function createDesk(x, z) {
             const group = new THREE.Group();
-            const top = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 1.5), new THREE.MeshStandardMaterial({ color: 0x334155 })); // Darker desks
+            const top = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 1.5), new THREE.MeshStandardMaterial({ color: 0x1e293b })); 
             top.position.y = 0.75;
             top.castShadow = true;
             group.add(top);
             
-            const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.75, 0.1), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+            const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.75, 0.1), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
             const positions = [[-1.4, 0.375, -0.7], [1.4, 0.375, -0.7], [-1.4, 0.375, 0.7], [1.4, 0.375, 0.7]];
             positions.forEach(p => {
                 const l = leg.clone();
@@ -3519,13 +3364,16 @@
 
             group.position.set(x, 0, z);
             officeScene.add(group);
+            
+            // Add for collision (Radius-based collision for performance)
+            officeDesks.push({ x, z, radius: 2.2 });
         }
 
         function createSagaCharacters() {
             if(!allUsers || allUsers.length === 0) return;
 
             const stats = getOfficeStats();
-            officeCharacters = []; // Reset
+            officeCharacters = []; officeDesks = []; // Reset
 
             const divOffsets = {
                 'Direksi': { x: 0, z: -10, count: 0 },
@@ -3534,17 +3382,22 @@
                 'Administrasi': { x: 0, z: 25, count: 0 }
             };
 
+            const mapping = {
+                'Administrasi': ['ufaira', 'adi', 'karina'],
+                'Peta': ['rizal', 'rohman', 'hardi', 'naufal', 'afdhal', 'diyah'],
+                'Direksi': ['firman', 'angga', 'johan', 'nuryantiningsih']
+            };
+
             allUsers.forEach((user, i) => {
-                let div = 'Peta';
-                const nameUC = user.employee_name.toUpperCase();
-                const roleUC = (user.role || '').toUpperCase();
+                let div = 'Teknis'; // Default
+                const uname = user.username.toLowerCase();
                 
-                if(roleUC === 'ADMIN' || user.username === 'angga' || user.username === 'dimas') div = 'Direksi';
-                else if(nameUC.includes('AKUN') || nameUC.includes('S.AK') || user.username === 'karina' || user.username === 'adi') div = 'Administrasi';
-                else if(nameUC.includes('P.W.K') || nameUC.includes('S.T') || user.username === 'fiko' || user.username === 'rizal') div = 'Teknis';
+                for(const [d, members] of Object.entries(mapping)) {
+                    if(members.includes(uname)) { div = d; break; }
+                }
                 
                 const offset = divOffsets[div];
-                const col = offset.count % 4; // Compact grid
+                const col = offset.count % 4;
                 const row = Math.floor(offset.count / 4);
                 
                 const x = offset.x + (col * 5) - 8;
@@ -3555,7 +3408,6 @@
                 const colorMap = { 'Direksi': 0xfacc15, 'Peta': 0x10b981, 'Teknis': 0x6366f1, 'Administrasi': 0x0ea5e9 };
                 const charColor = colorMap[div] || 0x64748b;
 
-                // Dynamic lines base
                 const persona = localStorage.getItem(`saga_office_persona_${user.username}`) || "Halo! Saya sedang bekerja.";
                 const lines = [persona, `Divisi: ${div}`, "Status: Online"];
 
@@ -3596,27 +3448,31 @@
             head.position.y = 1.6;
             group.add(head);
 
-            // Floating Badge (Sprite)
+            // Floating Badge (Sprite - High Contrast)
             const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 64;
+            canvas.width = 512;
+            canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
-            ctx.roundRect(0, 0, 256, 64, 10);
+            
+            // Neon Glow Background
+            ctx.fillStyle = 'rgba(2, 6, 23, 0.95)';
+            ctx.roundRect(10, 10, 492, 108, 15);
             ctx.fill();
-            ctx.strokeStyle = `rgba(${color >> 16 & 255}, ${color >> 8 & 255}, ${color & 255}, 0.5)`;
-            ctx.lineWidth = 4;
+            
+            ctx.strokeStyle = `rgba(${color >> 16 & 255}, ${color >> 8 & 255}, ${color & 255}, 1)`;
+            ctx.lineWidth = 6;
             ctx.stroke();
+            
             ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 24px Inter, sans-serif';
+            ctx.font = 'bold 44px Inter, sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(badgeText || name, 128, 40);
+            ctx.fillText(badgeText || name, 256, 75);
             
             const texture = new THREE.CanvasTexture(canvas);
-            const spriteMat = new THREE.SpriteMaterial({ map: texture });
+            const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false }); // Always on top
             const sprite = new THREE.Sprite(spriteMat);
-            sprite.position.y = 2.2;
-            sprite.scale.set(1.5, 0.4, 1);
+            sprite.position.y = 2.4;
+            sprite.scale.set(3, 0.75, 1);
             group.add(sprite);
 
             group.position.set(x, 0, z);
@@ -3631,18 +3487,35 @@
                 return;
             }
 
-            const delta = (time - officeLastTime) / 1000;
+            const delta = Math.min((time - officeLastTime) / 1000, 0.1);
             officeLastTime = time;
 
-            // Player movement
-            const speed = 4 * delta;
+            // Player movement (Responsiveness overhaul)
+            const moveSpeed = 8 * delta;
             const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), officeMouseX);
             const side = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), officeMouseX);
-
-            if(officeKeys['w']) officeCamera.position.add(forward.multiplyScalar(speed));
-            if(officeKeys['s']) officeCamera.position.sub(forward.multiplyScalar(speed));
-            if(officeKeys['a']) officeCamera.position.sub(side.multiplyScalar(speed));
-            if(officeKeys['d']) officeCamera.position.add(side.multiplyScalar(speed));
+            
+            let moveDir = new THREE.Vector3(0, 0, 0);
+            if(officeKeys['w']) moveDir.add(forward);
+            if(officeKeys['s']) moveDir.sub(forward);
+            if(officeKeys['a']) moveDir.sub(side);
+            if(officeKeys['d']) moveDir.add(side);
+            
+            if(moveDir.length() > 0) {
+                moveDir.normalize().multiplyScalar(moveSpeed);
+                const nextPos = officeCamera.position.clone().add(moveDir);
+                
+                // Collision Detection (Circle vs Circle)
+                let collision = false;
+                officeDesks.forEach(d => {
+                    const dist = Math.sqrt((nextPos.x - d.x)**2 + (nextPos.z - d.z)**2);
+                    if(dist < d.radius) collision = true;
+                });
+                
+                if(!collision) {
+                    officeCamera.position.copy(nextPos);
+                }
+            }
 
             // Arrow keys support
             if(officeKeys['arrowup']) officeCamera.position.add(forward.multiplyScalar(speed));
