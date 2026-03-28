@@ -575,28 +575,59 @@
     <div id="office-ui-overlay" class="absolute top-6 left-6 p-6 bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-2xl text-white pointer-events-none max-w-[280px] shadow-2xl z-[60]">
         <h2 class="text-xl font-headline font-extrabold tracking-tighter text-cyan-400 uppercase mb-1">Digital Twin HQ</h2>
         <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4">Sagamartha HR Enterprise</p>
+        
+        <div class="mb-4 pointer-events-auto">
+            <button onclick="openPersonaModal()" class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-primary/20 hover:bg-primary/40 border border-primary/30 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all">
+                <span class="material-symbols-outlined text-sm">edit_note</span> Edit Status Virtual
+            </button>
+        </div>
+
         <div class="space-y-3 text-[11px] font-semibold text-slate-200">
-            <p class="flex items-center gap-3"><span class="w-5 h-5 flex items-center justify-center rounded-md bg-slate-800 text-[10px] text-emerald-400 border border-emerald-400/20 shadow-[0_0_10px_rgba(52,211,153,0.1)]">W</span> Maju</p>
-            <p class="flex items-center gap-3"><span class="w-5 h-5 flex items-center justify-center rounded-md bg-slate-800 text-[10px] text-emerald-400 border border-emerald-400/20">A</span> Kiri</p>
-            <p class="flex items-center gap-3"><span class="w-5 h-5 flex items-center justify-center rounded-md bg-slate-800 text-[10px] text-emerald-400 border border-emerald-400/20">S</span> Mundur</p>
-            <p class="flex items-center gap-3"><span class="w-5 h-5 flex items-center justify-center rounded-md bg-slate-800 text-[10px] text-emerald-400 border border-emerald-400/20">D</span> Kanan</p>
+            <p class="flex items-center gap-3"><span class="w-5 h-5 flex items-center justify-center rounded-md bg-slate-800 text-[10px] text-emerald-400 border border-emerald-400/20 shadow-[0_0_10px_rgba(52,211,153,0.1)]">W</span> / <span class="material-symbols-outlined text-xs">keyboard_arrow_up</span> Maju</p>
+            <p class="flex items-center gap-3"><span class="w-5 h-5 flex items-center justify-center rounded-md bg-slate-800 text-[10px] text-emerald-400 border border-emerald-400/20">S</span> / <span class="material-symbols-outlined text-xs">keyboard_arrow_down</span> Mundur</p>
             <div class="h-px bg-slate-700/50 my-2"></div>
-            <p class="flex items-center gap-2"><span class="material-symbols-outlined text-sm text-cyan-400">mouse_away</span> Gerakan Kamera: Mouse</p>
-            <p class="flex items-center gap-2"><span class="material-symbols-outlined text-sm text-amber-400">chat_bubble</span> Bicara ke Karakter: [E]</p>
+            <p class="flex items-center gap-2"><span class="material-symbols-outlined text-sm text-cyan-400">mouse_away</span> Putar & Zoom: Mouse</p>
+            <p class="flex items-center gap-2"><span class="material-symbols-outlined text-sm text-amber-400">chat_bubble</span> Bicara ke Staff: [E]</p>
+        </div>
+    </div>
+
+    <!-- Modal: Edit Persona [NEW] -->
+    <div id="modal-persona" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center hidden">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-[90%] max-w-md border border-slate-100">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 bg-cyan-50 rounded-2xl flex items-center justify-center text-primary shadow-sm">
+                    <span class="material-symbols-outlined text-2xl">person_pin</span>
+                </div>
+                <div>
+                    <h3 class="text-xl font-headline font-bold text-slate-800 tracking-tight">Status Virtual Office</h3>
+                    <p class="text-xs text-slate-500 font-medium">Apa yang ingin Anda sampaikan ke rekan kantor?</p>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] uppercase font-bold text-slate-400 mb-2 ml-1">Pesan Anda</label>
+                    <textarea id="input-persona" rows="3" class="w-full px-4 py-3 bg-slate-50 rounded-xl border-slate-200 border focus:border-primary focus:ring-0 text-sm" placeholder="Contoh: Sedang fokus survey peta..."></textarea>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="closePersonaModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-200 transition-all">Batal</button>
+                    <button onclick="savePersona()" class="flex-[2] py-3 bg-primary text-white rounded-xl font-bold text-xs shadow-md hover:bg-primary/90 active:scale-95 transition-all">Update Persona</button>
+                </div>
+            </div>
         </div>
     </div>
 
     <div id="office-dialogue-box" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-xl p-6 rounded-2xl shadow-2xl border border-slate-200 w-[90%] max-w-2xl hidden z-[100] animate-fade-in">
         <div class="flex justify-between items-start mb-4">
             <div>
+                <p id="office-dialogue-meta" class="text-[9px] font-bold text-primary uppercase tracking-[0.2em] mb-1">INTERAKSI VIRTUAL</p>
                 <h3 id="office-char-name" class="text-lg font-bold text-slate-800">Nama Karakter</h3>
-                <p id="office-char-role" class="text-[10px] font-extrabold text-primary uppercase tracking-widest">Role Division</p>
+                <p id="office-char-role" class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Role Division</p>
             </div>
             <button onclick="closeOfficeDialogue()" class="p-1 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
                 <span class="material-symbols-outlined">close</span>
             </button>
         </div>
-        <div id="office-dialogue-text" class="text-sm text-slate-600 leading-relaxed mb-6">
+        <div id="office-dialogue-text" class="text-sm text-slate-600 leading-relaxed mb-6 italic bg-slate-50 p-4 rounded-xl border-l-4 border-primary/30">
             Pesan dari karakter akan muncul di sini...
         </div>
         <div id="office-dialogue-options" class="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -3293,9 +3324,42 @@
                 }
             });
 
+            // Wheel movement
+            document.addEventListener('wheel', e => {
+                if(!window.officeSimInitialized || document.getElementById('view-office').classList.contains('hidden')) return;
+                const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), officeMouseX);
+                const zoomSpeed = 2;
+                if(e.deltaY < 0) officeCamera.position.add(forward.multiplyScalar(zoomSpeed));
+                else officeCamera.position.sub(forward.multiplyScalar(zoomSpeed));
+            });
+
             window.officeSimInitialized = true;
             requestAnimationFrame(animateOffice);
         }
+
+        window.openPersonaModal = function() {
+            if(!currentUser) return alert('Silakan login terlebih dahulu.');
+            const key = `saga_office_persona_${currentUser.username}`;
+            document.getElementById('input-persona').value = localStorage.getItem(key) || "";
+            document.getElementById('modal-persona').classList.remove('hidden');
+        };
+
+        window.closePersonaModal = function() {
+            document.getElementById('modal-persona').classList.add('hidden');
+        };
+
+        window.savePersona = function() {
+            const msg = document.getElementById('input-persona').value;
+            localStorage.setItem(`saga_office_persona_${currentUser.username}`, msg);
+            closePersonaModal();
+            // Re-spawn or update characters to reflect new message
+            officeCharacters.forEach(c => {
+                if(c.userData.username === currentUser.username) {
+                    c.userData.personaMessage = msg;
+                }
+            });
+            alert('Halo dari masa depan! Pesan profil Anda sudah terupdate di Virtual Office.');
+        };
 
         window.requestOfficeControl = function() {
             if(officeRenderer && !officeCurrentChar) {
@@ -3305,8 +3369,9 @@
 
         function createOfficeEnvironment() {
             // Floor
+            const floorSize = 300;
             const floor = new THREE.Mesh(
-                new THREE.PlaneGeometry(100, 100),
+                new THREE.PlaneGeometry(floorSize, floorSize),
                 new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5, metalness: 0.2 })
             );
             floor.rotation.x = -Math.PI / 2;
@@ -3314,30 +3379,53 @@
             officeScene.add(floor);
 
             // Grid pattern (Vibrant Cyan with Pulse)
-            const grid = new THREE.GridHelper(100, 100, 0x0ea5e9, 0x0f172a);
+            const grid = new THREE.GridHelper(floorSize, 100, 0x0ea5e9, 0x0f172a);
             grid.position.y = 0.01;
             grid.material.transparent = true;
             grid.material.opacity = 0.5;
             officeScene.add(grid);
             window.officeGrid = grid;
 
-            // Desks (Simplified)
-            for(let x = -15; x <= 15; x += 10) {
-                for(let z = -15; z <= 15; z += 10) {
-                    if(x === 0 && z === 0) continue;
-                    createDesk(x, z);
-                }
-            }
+            // Divisional Clusters
+            const clusters = {
+                'Admin': { x: 0, z: -10, color: 0xef4444 }, // Center North
+                'Peta': { x: -60, z: -40, color: 0x10b981 }, // West
+                'Teknis': { x: 60, z: -40, color: 0x6366f1 }, // East
+                'Administrasi': { x: 0, z: 40, color: 0x0ea5e9 } // South
+            };
+
+            Object.entries(clusters).forEach(([name, data]) => {
+                createSectorLabel(name, data.x, data.z, data.color);
+            });
+        }
+
+        function createSectorLabel(name, x, z, color) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+            ctx.fillRect(0, 0, 512, 128);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 80px Orbitron, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(name.toUpperCase(), 256, 90);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.SpriteMaterial({ map: texture, transparent: true, opacity: 0.3 });
+            const sprite = new THREE.Sprite(mat);
+            sprite.position.set(x, 10, z);
+            sprite.scale.set(15, 3.5, 1);
+            officeScene.add(sprite);
         }
 
         function createDesk(x, z) {
             const group = new THREE.Group();
-            const top = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 1.5), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            const top = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 1.5), new THREE.MeshStandardMaterial({ color: 0x334155 })); // Darker desks
             top.position.y = 0.75;
             top.castShadow = true;
             group.add(top);
             
-            const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.75, 0.1), new THREE.MeshStandardMaterial({ color: 0x94a3b8 }));
+            const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.75, 0.1), new THREE.MeshStandardMaterial({ color: 0x475569 }));
             const positions = [[-1.4, 0.375, -0.7], [1.4, 0.375, -0.7], [-1.4, 0.375, 0.7], [1.4, 0.375, 0.7]];
             positions.forEach(p => {
                 const l = leg.clone();
@@ -3350,28 +3438,50 @@
         }
 
         function createSagaCharacters() {
-            const stats = getOfficeStats();
-            
-            // Dimas (Peta)
-            officeCharacters.push(createCharMesh("Dimas", "Head of Peta", -5, -8, 0x10b981, [
-                `Halo! Saya Dimas. Saat ini ada ${stats.totalTargets} target survey di sistem.`,
-                "Data spasial kita terus diperbarui secara real-time.",
-                "Top performer bulan ini sedang kami review untuk bonus insentif."
-            ], `📊 ${stats.totalTargets} Targets`));
-            
-            // Karin (Administrasi & HR)
-            officeCharacters.push(createCharMesh("Karin", "Administrasi & HR", 5, -8, 0x0ea5e9, [
-                `Selamat datang! Saya Karin. Kami mengelola ${stats.totalUsers} personil aktif.`,
-                "Pastikan presensi tim Anda sudah tervalidasi sebelum jam 5 sore.",
-                "Budaya kerja Sagamartha mengutamakan akurasi dan integritas."
-            ], `👥 ${stats.totalUsers} Staff`));
+            if(!allUsers || allUsers.length === 0) return;
 
-            // Fiko (Teknis)
-            officeCharacters.push(createCharMesh("Fiko", "Technical Lead", 0, -15, 0x6366f1, [
-                `Sistem operasional normal. Sinkronisasi multi-target v4 stabil.`,
-                "Kami sedang mengoptimalkan algoritma weighted scoring dashboard.",
-                "Cek status API di panel pengaturan jika Anda merasa ada kendala koneksi."
-            ], "⚡ System Active"));
+            const stats = getOfficeStats();
+            officeCharacters = []; // Reset
+
+            const divOffsets = {
+                'Admin': { x: 0, z: -20, count: 0 },
+                'Peta': { x: -60, z: -50, count: 0 },
+                'Teknis': { x: 60, z: -50, count: 0 },
+                'Administrasi': { x: 0, z: 50, count: 0 }
+            };
+
+            allUsers.forEach((user, i) => {
+                let div = 'Peta';
+                const nameUC = user.employee_name.toUpperCase();
+                const roleUC = (user.role || '').toUpperCase();
+                
+                if(roleUC === 'ADMIN') div = 'Admin';
+                else if(nameUC.includes('AKUN') || nameUC.includes('S.AK') || user.username === 'karina' || user.username === 'adi') div = 'Administrasi';
+                else if(nameUC.includes('P.W.K') || nameUC.includes('S.T') || user.username === 'fiko' || user.username === 'rizal') div = 'Teknis';
+                
+                const offset = divOffsets[div];
+                const col = offset.count % 5;
+                const row = Math.floor(offset.count / 5);
+                
+                const x = offset.x + (col * 8) - 16;
+                const z = offset.z + (row * 6);
+                
+                createDesk(x, z);
+                
+                const colorMap = { 'Admin': 0xef4444, 'Peta': 0x10b981, 'Teknis': 0x6366f1, 'Administrasi': 0x0ea5e9 };
+                const charColor = colorMap[div] || 0x64748b;
+
+                // Dynamic lines based on role
+                const persona = localStorage.getItem(`saga_office_persona_${user.username}`) || "Halo! Saya sedang bekerja.";
+                const lines = [
+                    persona,
+                    `Unit Kerja: ${div}`,
+                    `Status: Aktif di Saga Metrics v4`
+                ];
+
+                officeCharacters.push(createCharMesh(user.employee_name, div, x, z, charColor, lines, user.employee_name.split(' ')[0], user.username));
+                offset.count++;
+            });
         }
 
         function getOfficeStats() {
@@ -3382,7 +3492,7 @@
             };
         }
 
-        function createCharMesh(name, role, x, z, color, lines, badgeText) {
+        function createCharMesh(name, role, x, z, color, lines, badgeText, username) {
             const group = new THREE.Group();
             
             // Glowing Base Ring
@@ -3427,7 +3537,7 @@
             group.add(sprite);
 
             group.position.set(x, 0, z);
-            group.userData = { name, role, lines, initialPos: new THREE.Vector3(x, 0, z) };
+            group.userData = { name, role, lines, username, initialPos: new THREE.Vector3(x, 0, z) };
             officeScene.add(group);
             return group;
         }
@@ -3448,6 +3558,14 @@
 
             if(officeKeys['w']) officeCamera.position.add(forward.multiplyScalar(speed));
             if(officeKeys['s']) officeCamera.position.sub(forward.multiplyScalar(speed));
+            if(officeKeys['a']) officeCamera.position.sub(side.multiplyScalar(speed));
+            if(officeKeys['d']) officeCamera.position.add(side.multiplyScalar(speed));
+
+            // Arrow keys support
+            if(officeKeys['arrowup']) officeCamera.position.add(forward.multiplyScalar(speed));
+            if(officeKeys['arrowdown']) officeCamera.position.sub(forward.multiplyScalar(speed));
+            if(officeKeys['arrowleft']) officeCamera.position.sub(side.multiplyScalar(speed));
+            if(officeKeys['arrowright']) officeCamera.position.add(side.multiplyScalar(speed));
             if(officeKeys['a']) officeCamera.position.sub(side.multiplyScalar(speed));
             if(officeKeys['d']) officeCamera.position.add(side.multiplyScalar(speed));
 
@@ -3493,26 +3611,39 @@
             
             const box = document.getElementById('office-dialogue-box');
             box.classList.remove('hidden');
+            
+            const asker = currentUser ? currentUser.employee_name : "Seseorang";
+            document.getElementById('office-dialogue-meta').textContent = `${asker} bertanya ke ${char.userData.name}`;
+            
             document.getElementById('office-char-name').textContent = char.userData.name;
             document.getElementById('office-char-role').textContent = char.userData.role;
-            document.getElementById('office-dialogue-text').textContent = char.userData.lines[0];
+            
+            // Re-fetch persona for target
+            const persona = localStorage.getItem(`saga_office_persona_${char.userData.username}`) || char.userData.lines[0];
+            document.getElementById('office-dialogue-text').textContent = persona;
             
             const opts = document.getElementById('office-dialogue-options');
             opts.innerHTML = '';
             
             const questions = [
-                `Apa kabar, ${char.userData.name}?`,
-                "Ada update apa hari ini?",
-                "Bagaimana progres tim Anda?",
-                "Terima kasih atas infonya!"
+                `Halo ${char.userData.name.split(' ')[0]}, apa kabar?`,
+                "Sedang sibuk apa hari ini?",
+                "Ada yang bisa saya bantu?",
+                "Semangat kerjanya!"
             ];
 
-            char.userData.lines.forEach((line, i) => {
+            questions.forEach((q, i) => {
                 const btn = document.createElement('button');
                 btn.className = 'text-left p-3 border border-slate-100 rounded-xl text-xs font-medium hover:border-primary hover:bg-cyan-50 transition-all flex justify-between items-center group';
-                btn.innerHTML = `<span>${questions[i] || "Tanya lainnya..."}</span> <span class="material-symbols-outlined text-transparent group-hover:text-primary transition-all">chevron_right</span>`;
+                btn.innerHTML = `<span>${q}</span> <span class="material-symbols-outlined text-transparent group-hover:text-primary transition-all">chevron_right</span>`;
                 btn.onclick = () => { 
-                    document.getElementById('office-dialogue-text').textContent = line; 
+                    const responses = [
+                        char.userData.lines[0], // Custom persona
+                        `Saya sedang di divisi ${char.userData.role}. Cukup padat hari ini!`,
+                        "Sepertinya semua aman terkendali, terima kasih!",
+                        "Terima kasih! Kamu juga ya!"
+                    ];
+                    document.getElementById('office-dialogue-text').textContent = responses[i]; 
                 };
                 opts.appendChild(btn);
             });
