@@ -39,6 +39,7 @@ OVERTIME_FILE = os.path.join(DATA_DIR, "enterprise_overtime.json")
 WORKLOAD_FILE = os.path.join(DATA_DIR, "project_workload_pwkv4.json")
 AGENDAS_FILE = os.path.join(DATA_DIR, "enterprise_agendas.json")
 CHECKINGS_FILE = os.path.join(DATA_DIR, "enterprise_checkings.json")
+OFFICE_MESSAGES_FILE = os.path.join(DATA_DIR, "enterprise_office_messages.json")
 
 class UserBase(BaseModel):
     username: str
@@ -99,6 +100,15 @@ class OvertimeRecord(BaseModel):
     reason: str
     manager_approval: str = "pending"
     comments: Optional[str] = ""
+
+class OfficeMessage(BaseModel):
+    id: str
+    from_user: str
+    to_user: str
+    message: str
+    timestamp: str
+    is_read: bool = False
+    reply: Optional[str] = ""
 
 class WorkloadData(BaseModel):
     projects: List[str]
@@ -461,6 +471,31 @@ def delete_checking(checking_id: str):
     with open(CHECKINGS_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=2)
     return {"message": "Checking record deleted."}
+
+# OFFICE MESSAGING API
+@app.get("/api/office/messages/{username}", response_model=List[OfficeMessage])
+def get_office_messages(username: str):
+    messages = load_json(OFFICE_MESSAGES_FILE, [])
+    return [m for m in messages if m["to_user"] == username]
+
+@app.post("/api/office/messages", status_code=status.HTTP_201_CREATED)
+def send_office_message(msg: OfficeMessage):
+    messages = load_json(OFFICE_MESSAGES_FILE, [])
+    messages.append(msg.dict())
+    with open(OFFICE_MESSAGES_FILE, "w", encoding="utf-8") as f:
+        json.dump(messages, f, indent=2)
+    return {"message": "Message sent to Virtual Office staff."}
+
+@app.put("/api/office/messages/{msg_id}/read")
+def mark_message_read(msg_id: str):
+    messages = load_json(OFFICE_MESSAGES_FILE, [])
+    for m in messages:
+        if m["id"] == msg_id:
+            m["is_read"] = True
+            with open(OFFICE_MESSAGES_FILE, "w", encoding="utf-8") as f:
+                json.dump(messages, f, indent=2)
+            return {"message": "Message marked as read."}
+    raise HTTPException(status_code=404, detail="Message not found.")
 
 if __name__ == "__main__":
     import uvicorn
