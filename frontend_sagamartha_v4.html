@@ -1676,7 +1676,7 @@
                 supervisors.forEach(s => {
                     const opt = document.createElement('option');
                     opt.value = opt.textContent = s.employee_name;
-                    opt.appendChild(opt);
+                    el.appendChild(opt);
                 });
                 if (currentVal) el.value = currentVal;
             });
