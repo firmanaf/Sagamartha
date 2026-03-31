@@ -598,7 +598,7 @@ def migrate_legacy_data():
                     with open(json_target, "w", encoding="utf-8") as jf:
                         json.dump(data, jf, indent=2)
                     migrated_count += 1
-                    messages.append(f"Migrated {key} from {source_csv}")
+                    messages.append(f"Migrated {len(data)} {key} records from {source_csv}")
             except Exception as e:
                 messages.append(f"Failed to migrate {key}: {str(e)}")
                 

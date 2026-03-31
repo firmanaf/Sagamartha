@@ -475,7 +475,7 @@
             </div>
 
             <!-- Card: Status Koneksi -->
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
                 <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><span
                         class="material-symbols-outlined text-primary">cloud_sync</span> Status Gateway API</h3>
                 <div class="flex items-center gap-2 mt-2">
@@ -485,6 +485,33 @@
                 <button onclick="fetchPerformanceData(); alert('Koneksi OK dan tersinkron.')"
                     class="mt-4 px-4 py-2 bg-primary text-white text-sm font-bold rounded-lg shadow-sm hover:opacity-90 transition-opacity">Uji
                     Koneksi Ulang</button>
+            </div>
+
+            <!-- Card: System Administration (Admin Only) [NEW] -->
+            <div id="admin-system-card" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hidden">
+                <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><span
+                        class="material-symbols-outlined text-rose-600">admin_panel_settings</span> Administrasi Sistem (Admin)</h3>
+                
+                <div class="space-y-6">
+                    <div class="p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                        <h4 class="text-xs font-black text-[#00445b] uppercase tracking-wider mb-2">Konfigurasi Geofencing</h4>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-slate-600">Radius Batas Check-in WFO</span>
+                            <span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full font-black text-xs">500 Meter</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-2 italic">*Radius diperketat untuk akurasi data kehadiran.</p>
+                    </div>
+
+                    <div class="p-4 bg-rose-50 border border-rose-100 rounded-xl">
+                        <h4 class="text-xs font-black text-rose-700 uppercase tracking-wider mb-1">Pemulihan Data (Recovery)</h4>
+                        <p class="text-xs text-slate-600 mb-4 font-medium leading-relaxed">Gunakan fitur ini untuk memigrasi data dari file CSV legacy jika database JSON mengalami reset atau ketidakkonsistenan.</p>
+                        
+                        <button onclick="runDataMigration()" id="btn-run-migration"
+                            class="w-full flex items-center justify-center gap-2 px-5 py-3 bg-rose-600 text-white rounded-lg shadow-lg shadow-rose-200 font-bold hover:bg-rose-700 transition-all active:scale-95">
+                            <span class="material-symbols-outlined">database_upload</span> Migrasi Data Legacy (CSV)
+                        </button>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -1881,6 +1908,13 @@
 
                 fetchWorkload();
                 init(); // Unified initialization
+
+                // Show admin special controls
+                const adminCard = document.getElementById('admin-system-card');
+                if (adminCard) {
+                    const role = getNormalizedRole();
+                    adminCard.classList.toggle('hidden', role !== 'admin');
+                }
             } else {
                 switchView('view-login');
             }
@@ -1943,6 +1977,34 @@
             }
             btn.textContent = 'Simpan Password Baru';
         }
+
+        // System Administration & Data Recovery
+        window.runDataMigration = async () => {
+            const btn = document.getElementById('btn-run-migration');
+            if (!confirm('Peringatan: Fitur ini akan menyinkronkan data dari CSV legacy ke database JSON aktif. Lanjutkan?')) return;
+            
+            btn.disabled = true;
+            btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-lg">sync</span> Memproses Migrasi...`;
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/recovery/migrate`, { method: 'POST' });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    const details = data.details ? data.details.join('\n') : '';
+                    alert('Sukses: Data berhasil dipulihkan!\n' + details);
+                    // Refresh all data
+                    init();
+                } else {
+                    alert('Info: ' + (data.detail || 'Tidak ada file CSV legacy yang ditemukan untuk migrasi.'));
+                }
+            } catch (e) {
+                alert('Kesalahan jaringan: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span class="material-symbols-outlined">database_upload</span> Migrasi Data Legacy (CSV)`;
+            }
+        };
 
         // Modal logic: INDIVIDUAL PERFORMANCE TARGET
         let editPerformanceId = null;
