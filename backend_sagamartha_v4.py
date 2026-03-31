@@ -414,6 +414,18 @@ def approve_overtime(record_id: str, manager_approval: str, comments: Optional[s
             return {"message": f"Overtime {record_id} marked as {manager_approval}."}
     raise HTTPException(status_code=404, detail="Overtime not found.")
 
+@app.delete("/api/overtime/{record_id}")
+def delete_overtime(record_id: str):
+    records = load_json(OVERTIME_FILE, [])
+    initial_count = len(records)
+    records = [r for r in records if r["id"] != record_id]
+    if len(records) == initial_count:
+        raise HTTPException(status_code=404, detail="Overtime not found.")
+    
+    with open(OVERTIME_FILE, "w", encoding="utf-8") as f:
+        json.dump(records, f, indent=2)
+    return {"message": f"Overtime record {record_id} deleted successfully."}
+
 @app.get("/api/workload")
 def get_workload(month: str = None):
     # Returns workload for a specific month (YYYY-MM). 
