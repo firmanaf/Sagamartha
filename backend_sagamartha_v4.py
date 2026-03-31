@@ -337,8 +337,8 @@ def create_attendance(record: AttendanceRecord):
             return 2 * R * math.atan2(math.sqrt(a), math.sqrt(1-a))
         
         dist = haversine(record.check_in_lat, record.check_in_lng, office_lat, office_lng)
-        if dist > 1000:
-            raise HTTPException(status_code=403, detail=f"Check-in WFO ditolak. Jarak Anda {round(dist)}m dari kantor (Batas: 1000m).")
+        if dist > 500:
+            raise HTTPException(status_code=403, detail=f"Check-in WFO ditolak. Jarak Anda {round(dist)}m dari kantor (Batas: 500m).")
 
     record_dict = record.dict()
     record_dict["work_mode"] = user_mode
