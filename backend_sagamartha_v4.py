@@ -10,6 +10,7 @@ import hashlib
 
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+import csv
 
 app = FastAPI(title="Sagamartha HR Enterprise v4 Backend")
 app.mount("/static", StaticFiles(directory="."), name="static")
@@ -549,6 +550,52 @@ def mark_message_read(msg_id: str):
                 json.dump(messages, f, indent=2)
             return {"message": "Message marked as read."}
     raise HTTPException(status_code=404, detail="Message not found.")
+
+# --- RECOVERY & MIGRATION TOOL ---
+@app.post("/api/recovery/migrate")
+def migrate_legacy_data():
+    """
+    Attempts to find legacy CSV or JSON data and migrate it to the current JSON files.
+    """
+    targets = {
+        "records": {"csv": "enterprise_records.csv", "json_target": RECORDS_FILE},
+        "attendance": {"csv": "enterprise_attendance.csv", "json_target": ATTENDANCE_FILE},
+        "overtime": {"csv": "enterprise_overtime.csv", "json_target": OVERTIME_FILE},
+    }
+    
+    migrated_count = 0
+    messages = []
+    
+    for key, paths in targets.items():
+        csv_path = paths["csv"]
+        json_target = paths["json_target"]
+        
+        # Check if CSV exists in current or parent directory
+        source_csv = None
+        if os.path.exists(csv_path):
+            source_csv = csv_path
+        elif os.path.exists(os.path.join("..", csv_path)):
+            source_csv = os.path.join("..", csv_path)
+            
+        if source_csv:
+            try:
+                with open(source_csv, "r", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    data = list(reader)
+                    # Simple field mapping or just save as is
+                    with open(json_target, "w", encoding="utf-8") as jf:
+                        json.dump(data, jf, indent=2)
+                    migrated_count += 1
+                    messages.append(f"Migrated {key} from {source_csv}")
+            except Exception as e:
+                messages.append(f"Failed to migrate {key}: {str(e)}")
+                
+    if migrated_count == 0:
+        # Try to check if JSON files were just renamed or moved
+        # (This is a safety fallback)
+        raise HTTPException(status_code=404, detail="No legacy CSV files found for migration.")
+        
+    return {"message": "Success", "details": messages}
 
 if __name__ == "__main__":
     import uvicorn
