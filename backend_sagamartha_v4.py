@@ -46,6 +46,7 @@ class UserBase(BaseModel):
     employee_name: str
     role: str
     supervisor_name: Optional[str] = ""
+    work_mode: Optional[str] = "WFO" # WFO or WFA
 
 class PerformanceRecord(BaseModel):
     id: str
@@ -89,6 +90,7 @@ class AttendanceRecord(BaseModel):
     check_out_lng: Optional[float] = None
     status: str = "hadir"
     notes: Optional[str] = ""
+    work_mode: Optional[str] = "WFO"
 
 class OvertimeRecord(BaseModel):
     id: str
@@ -100,6 +102,7 @@ class OvertimeRecord(BaseModel):
     reason: str
     manager_approval: str = "pending"
     comments: Optional[str] = ""
+    approved_duration_hours: Optional[float] = None
 
 class OfficeMessage(BaseModel):
     id: str
@@ -154,7 +157,8 @@ def login(creds: LoginRequest):
                     "username": u["username"],
                     "employee_name": u["employee_name"],
                     "role": u["role"],
-                    "supervisor_name": u.get("supervisor_name", "")
+                    "supervisor_name": u.get("supervisor_name", ""),
+                    "work_mode": u.get("work_mode", "WFO")
                 }
             }
             
@@ -173,7 +177,20 @@ def read_root():
 def get_users():
     users = load_json(USERS_FILE, [])
     # Filter sensitive data
-    return [{"username": u["username"], "employee_name": u["employee_name"], "role": u["role"], "supervisor_name": u.get("supervisor_name", "")} for u in users]
+    return [{"username": u["username"], "employee_name": u["employee_name"], "role": u["role"], "supervisor_name": u.get("supervisor_name", ""), "work_mode": u.get("work_mode", "WFO")} for u in users]
+
+@app.put("/api/users/{username}/work_mode")
+def update_user_work_mode(username: str, work_mode: str):
+    if work_mode not in ["WFO", "WFA"]:
+        raise HTTPException(status_code=400, detail="Invalid work mode")
+    users = load_json(USERS_FILE, [])
+    for u in users:
+        if u["username"] == username:
+            u["work_mode"] = work_mode
+            with open(USERS_FILE, "w", encoding="utf-8") as f:
+                json.dump(users, f, indent=2)
+            return {"message": f"Work mode for {username} updated to {work_mode}."}
+    raise HTTPException(status_code=404, detail="User not found.")
 
 @app.delete("/api/users/{username}")
 def delete_user(username: str):
@@ -207,12 +224,14 @@ def change_password(username: str, req: PasswordChangeRequest, admin_override: b
     raise HTTPException(status_code=404, detail="User not found.")
 
 @app.get("/api/performance", response_model=List[PerformanceRecord])
-def get_performance(user: Optional[str] = None, dt: Optional[str] = None):
+def get_performance(user: Optional[str] = None, dt: Optional[str] = None, status: Optional[str] = None):
     records = load_json(RECORDS_FILE, [])
     if user:
         records = [r for r in records if r["employee_name"] == user]
     if dt:
         records = [r for r in records if r["work_date"] == dt]
+    if status:
+        records = [r for r in records if r["status"] == status]
     return records
 
 @app.post("/api/performance", status_code=status.HTTP_201_CREATED)
@@ -292,7 +311,37 @@ def create_attendance(record: AttendanceRecord):
     for r in records:
         if r["employee_name"] == record.employee_name and r["attendance_date"] == record.attendance_date:
             raise HTTPException(status_code=400, detail="Data absensi hari ini sudah ada.")
-    records.append(record.dict())
+    # Distance check for WFO
+    office_lat, office_lng = -7.936041541576592, 112.61970849002593
+    
+    # Get user's current work mode from users file
+    users = load_json(USERS_FILE, [])
+    user_mode = "WFO"
+    for u in users:
+        if u["employee_name"] == record.employee_name:
+            user_mode = u.get("work_mode", "WFO")
+            break
+    
+    if user_mode == "WFO":
+        if record.check_in_lat is None or record.check_in_lng is None:
+            raise HTTPException(status_code=400, detail="Lokasi GPS wajib untuk mode WFO.")
+        
+        import math
+        def haversine(lat1, lon1, lat2, lon2):
+            R = 6371000 # meters
+            phi1, phi2 = math.radians(lat1), math.radians(lat2)
+            dphi = math.radians(lat2 - lat1)
+            dlamb = math.radians(lon2 - lon1)
+            a = math.sin(dphi/2)**2 + math.cos(phi1)*math.cos(phi2)*math.sin(dlamb/2)**2
+            return 2 * R * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        
+        dist = haversine(record.check_in_lat, record.check_in_lng, office_lat, office_lng)
+        if dist > 1000:
+            raise HTTPException(status_code=403, detail=f"Check-in WFO ditolak. Jarak Anda {round(dist)}m dari kantor (Batas: 1000m).")
+
+    record_dict = record.dict()
+    record_dict["work_mode"] = user_mode
+    records.append(record_dict)
     print(f"DEBUG: Saving attendance to {ATTENDANCE_FILE}. Total records: {len(records)}")
     with open(ATTENDANCE_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, indent=2)
@@ -331,10 +380,12 @@ def delete_attendance(record_id: str):
     return {"message": f"Record absensi {record_id} berhasil dihapus/reset."}
 
 @app.get("/api/overtime", response_model=List[OvertimeRecord])
-def get_overtime(user: Optional[str] = None):
+def get_overtime(user: Optional[str] = None, month: Optional[str] = None):
     records = load_json(OVERTIME_FILE, [])
     if user:
         records = [r for r in records if r["employee_name"] == user]
+    if month:
+        records = [r for r in records if r["overtime_date"].startswith(month)]
     return records
 
 @app.post("/api/overtime", status_code=status.HTTP_201_CREATED)
@@ -347,7 +398,7 @@ def create_overtime(record: OvertimeRecord):
     return {"message": "Overtime request created successfully."}
 
 @app.put("/api/overtime/{record_id}/approval")
-def approve_overtime(record_id: str, manager_approval: str, comments: Optional[str] = ""):
+def approve_overtime(record_id: str, manager_approval: str, comments: Optional[str] = "", approved_duration_hours: Optional[float] = None):
     if manager_approval not in ["approved", "rejected", "pending"]:
         raise HTTPException(status_code=400, detail="Invalid approval status")
     records = load_json(OVERTIME_FILE, [])
@@ -355,6 +406,8 @@ def approve_overtime(record_id: str, manager_approval: str, comments: Optional[s
         if r["id"] == record_id:
             r["manager_approval"] = manager_approval
             if comments: r["comments"] = comments
+            if approved_duration_hours is not None:
+                r["approved_duration_hours"] = approved_duration_hours
             with open(OVERTIME_FILE, "w", encoding="utf-8") as f:
                 json.dump(records, f, indent=2)
             return {"message": f"Overtime {record_id} marked as {manager_approval}."}
